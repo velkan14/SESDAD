@@ -8,9 +8,9 @@ namespace PuppetMaster
 {
     class PM
     {
-        void createSubscriber() { }
-        void createBroker() { }
-        void createPublisher() { }
+        void createSubscriber(String processName, int site, String url) { }
+        void createBroker(String processName, int site, String url) { }
+        void createPublisher(String processName, int site, String url) { }
 
         void subscribe() { }
         void unsubscribe() { }
