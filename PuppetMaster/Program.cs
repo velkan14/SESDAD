@@ -15,7 +15,7 @@ namespace PuppetMaster
         {
             PM pm = new PM();
 
-            /**
+            /*
             Subscriber processname Subscribe topicname
             Subscriber processname Unsubscribe topicname
             Publisher processname Publish numberofevents Ontopic topicname Interval xms

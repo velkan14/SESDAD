@@ -6,11 +6,20 @@ using System.Threading.Tasks;
 
 namespace PuppetMaster
 {
-    class PM
+    class PM : MarshalByRefObject, PMInterface
     {
-        void createSubscriber(String processName, int site, String url) { }
-        void createBroker(String processName, int site, String url) { }
-        void createPublisher(String processName, int site, String url) { }
+        public void createSubscriber(String processName, int site, String url)
+        {
+
+        }
+        public void createBroker(String processName, int site, String url)
+        {
+
+        }
+        public void createPublisher(String processName, int site, String url)
+        {
+
+        }
 
         void subscribe() { }
         void unsubscribe() { }
