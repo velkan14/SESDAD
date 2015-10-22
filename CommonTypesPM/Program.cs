@@ -6,10 +6,24 @@ using System.Threading.Tasks;
 
 namespace CommonTypesPM
 {
-    class Program
+    public interface NotificationReceiver
     {
-        static void Main(string[] args)
-        {
-        }
+
     }
+
+    public interface PMSubscriber
+    {
+
+    }
+
+    public interface PMPublisher
+    {
+
+    }
+
+    public interface PMBroker
+    {
+
+    }
+
 }

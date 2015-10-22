@@ -6,10 +6,19 @@ using System.Threading.Tasks;
 
 namespace CommonTypes
 {
-    class Program
+    public interface SubscriverInterface
     {
-        static void Main(string[] args)
-        {
-        }
+
     }
+
+    public interface PublisherInterface
+    {
+
+    }
+
+    public interface EventReceiver
+    {
+
+    }
+
 }
