@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace CommonTypes
 {
-    public interface SubscriverInterface{
+    public interface SubscriberInterface{
         //classe para o evento??
-        void deliverEvent(Event newEvent);
+        void deliverToSub(Event newEvent);
 
     }
 
@@ -24,7 +25,8 @@ namespace CommonTypes
 
     public interface BrokerInterface{
         void subscribe(string topic, string subscriberURL);
-        void unsubscribe(string topic);        
+        void unsubscribe(string topic);
+        void publish(Event newEvent);        
     }
 
     [Serializable]
@@ -48,5 +50,6 @@ namespace CommonTypes
         }
 
     }
+    
 
 }

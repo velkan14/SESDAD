@@ -15,8 +15,9 @@ namespace Broker
         static void Main(string[] args)
         {
             //deve receber o porto nos argumentos. Hope so...
-            TcpChannel channel = new TcpChannel(8086);
+            TcpChannel channel = new TcpChannel(Int32.Parse(args[0]));
             ChannelServices.RegisterChannel(channel, false);
+            BrokerServices brk = new BrokerServices(args[1], args[2]);
             RemotingConfiguration.RegisterWellKnownServiceType(
                 typeof(BrokerServices), "BrokerServices",
                 WellKnownObjectMode.Singleton);
@@ -28,26 +29,36 @@ namespace Broker
 
     public class BrokerServices : MarshalByRefObject, BrokerInterface
     {
-        string daddy;
-        List<string> sons;
-        Dictionary<string, List<SubscriverInterface>> subscribersByTopic;
+        string processName;
+        BrokerInterface dad;
+        List<BrokerInterface> sons;
+        List<SubscriberInterface> subs; 
+        Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
+        bool flooding;
 
-        BrokerServices(){
-
-
+        public BrokerServices(string dadURL, string routingPolicy){
+            if (!dadURL.Equals("none")) {
+                dad = (BrokerInterface)Activator.GetObject(
+                           typeof(BrokerInterface), dadURL);
+            }
+            if (routingPolicy.Equals("flooding"))
+                flooding = true;
+            else
+                flooding = false;
         }
+           
 
 
         public void subscribe(string topic, string subscriberURL) {
             Console.WriteLine("New subscriber listening at " + subscriberURL);
-            SubscriverInterface newSubscriber =
-                (SubscriverInterface)Activator.GetObject(
-                       typeof(SubscriverInterface), subscriberURL);
+            SubscriberInterface newSubscriber =
+                (SubscriberInterface)Activator.GetObject(
+                       typeof(SubscriberInterface), subscriberURL);
 
             if (subscribersByTopic.ContainsKey(topic)) 
                 subscribersByTopic[topic].Add(newSubscriber);
             else 
-                subscribersByTopic.Add(topic, new List<SubscriverInterface> { newSubscriber });
+                subscribersByTopic.Add(topic, new List<SubscriberInterface> { newSubscriber });
             
         }
 
@@ -55,6 +66,23 @@ namespace Broker
         {
             throw new NotImplementedException();
         }
+
+        public void publish(Event newEvent) {
+            if (flooding) {
+                if (dad != null) { dad.publish(newEvent); }
+                foreach(BrokerInterface son in sons) { son.publish(newEvent); }
+                foreach (SubscriberInterface son in sons) { son.deliverToSub(newEvent); }
+            }
+            else {
+            //TODO
+            }
+
+
+
+        }
+
+
+
     }
 
 }
