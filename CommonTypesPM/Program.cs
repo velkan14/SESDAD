@@ -15,22 +15,47 @@ namespace CommonTypesPM
 
     public interface NotificationReceiver
     {
+        //PubEvent publisher-processname, publisher-processname, topicname, event-number
+        void publishNotification();
 
-    }
+        //BroEvent broker-processname, publisher-processname, topicname, event-number
+        void forwardNotification();
+
+        //SubEvent subscriber-processname, publisher-processname, topicname, event-number
+        void receiveNotification();
+
+        }
 
     public interface PMSubscriber
     {
+        void subscribe(string topic);
+        void unsubscribe(string topic);
 
+        void status();
+        void crash();
+        void freeze();
+        void unfreeze();
     }
 
     public interface PMPublisher
     {
+        void publish(int number, string topic, int interval);
 
+        void status();
+        void crash();
+        void freeze();
+        void unfreeze();
     }
 
     public interface PMBroker
     {
+        void addSon(string url);
+        void addDad(string url);
 
+        void status();
+        void crash();
+        void freeze();
+        void unfreeze();
     }
 
 }
