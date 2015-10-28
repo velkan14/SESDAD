@@ -51,6 +51,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommonTypesPM\CommonTypesPM.csproj">
+      <Project>{f32ae9a6-9923-45e3-ae85-59a9e20fa88d}</Project>
+      <Name>CommonTypesPM</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
