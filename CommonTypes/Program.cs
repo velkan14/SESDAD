@@ -15,7 +15,7 @@ namespace CommonTypes
 
     public interface PublisherInterface
     {
-
+        void publishEvent(Event newEvent);
     }
 
     public interface EventReceiver

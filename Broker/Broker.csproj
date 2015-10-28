@@ -63,13 +63,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BrokerServices.cs" />
+    <Compile Include="PMBrokerImpl.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PublisherImpl.cs" />
+    <Compile Include="SubscriberImpl.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonTypesPM\CommonTypesPM.csproj">
+      <Project>{f32ae9a6-9923-45e3-ae85-59a9e20fa88d}</Project>
+      <Name>CommonTypesPM</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CommonTypes\CommonTypes.csproj">
       <Project>{6166d7fd-143a-4774-a276-4e94f322e78b}</Project>
       <Name>CommonTypes</Name>
