@@ -17,35 +17,16 @@ namespace Broker
         {
             //deve receber o porto nos argumentos. Hope so...
             //tcpchannel dadURL routingPolicy processURL
-            if (!args[0].Equals("none"))
-            {
-               // TcpChannel channel = new TcpChannel(Int32.Parse(args[0]));
-                TcpChannel channel = new TcpChannel(8080);
-                ChannelServices.RegisterChannel(channel, false);
-                BrokerServices brk = new BrokerServices("tcp://1.2.3.4:3334/DadBroker", "flooding");
-                RemotingServices.Marshal(brk,
-                    "tcp://1.2.3.4:3333/SonBroker",
-                    typeof(BrokerServices));
-
-                Console.WriteLine("New broker listening at tcp://1.2.3.4:3333/SonBroker");
-               
-                System.Console.WriteLine("Press <enter> to try to connect to dadBroker...");
-                System.Console.ReadLine();
-                BrokerServices server = (BrokerServices)Activator.GetObject(typeof(BrokerServices), "tcp://1.2.3.4:3334/DadBroker");
- 
-            }
-            else
-            {
-                TcpChannel channel = new TcpChannel(8081);
-                ChannelServices.RegisterChannel(channel, false);
-                BrokerServices brk = new BrokerServices("none", "flooding");
-                RemotingServices.Marshal(brk,
-                    "tcp://1.2.3.4:3334/DadBroker",
-                    typeof(BrokerServices));
-                
-                Console.WriteLine("COCONew broker listening at tcp://1.2.3.4:3334/DadBroker");
+           
+            // TcpChannel channel = new TcpChannel(Int32.Parse(args[0]));
+            TcpChannel channel = new TcpChannel(8086);
+            ChannelServices.RegisterChannel(channel, false);
+            BrokerServices brk = new BrokerServices();
+            RemotingServices.Marshal(brk,
+                "SonBroker",
+                typeof(BrokerServices));
               
-            }
+            Console.WriteLine("New broker listening at tcp://localhost:8086/Broker");  
             System.Console.WriteLine("Press <enter> to terminate Broker...");
             System.Console.ReadLine();
         }   
@@ -60,15 +41,15 @@ namespace Broker
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
         bool flooding;
 
-        public BrokerServices(string dadURL, string routingPolicy){
-            if (!dadURL.Equals("none")) {
-                dad = (BrokerServices)Activator.GetObject(
-                           typeof(BrokerServices), dadURL);
-            }
-            if (routingPolicy.Equals("flooding"))
-                flooding = true;
-            else
-                flooding = false;
+        public BrokerServices(/*string dadURL, string routingPolicy*/){
+       //     if (!dadURL.Equals("none")) {
+        //        dad = (BrokerServices)Activator.GetObject(
+                       //    typeof(BrokerServices), dadURL);
+        //    }
+       //     if (routingPolicy.Equals("flooding"))
+       //         flooding = true;
+        //    else
+         //       flooding = false;
         }
 
         public void subscribe(string topic, string subscriberURL) {
@@ -82,11 +63,7 @@ namespace Broker
                 subscribersByTopic.Add(topic, new List<SubscriberInterface> { newSubscriber });
             
         }
-        public void say()
-        {
-            Console.WriteLine("asdasdasda");
-
-        }
+       
         public void unsubscribe(string topic)
         {
             throw new NotImplementedException();
