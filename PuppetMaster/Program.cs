@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+
 namespace PuppetMaster
 {
     class Program
@@ -14,6 +15,11 @@ namespace PuppetMaster
         static void Main(string[] args)
         {
             PM pm = new PM();
+
+            //read configuration file
+            string[] lines = System.IO.File.ReadAllLines(@"D:\Beatriz\Documents\IST\DAD\SESDAD\config.txt");
+
+
 
             /*
             Subscriber processname Subscribe topicname
