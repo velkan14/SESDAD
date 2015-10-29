@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -61,6 +62,7 @@ namespace PuppetMaster
                                 break;
                             case 3:
                                 //Process \\w+ Is broker On \\w+ URL \\w+
+                                Process.Start(@"D:\Beatriz\Documents\IST\DAD\SESDAD\Broker\bin\Debug\broker.exe", "8088 8088");
                                 break;
                             case 4:
                                 //RoutingPolicy flooding
