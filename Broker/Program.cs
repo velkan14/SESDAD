@@ -18,14 +18,15 @@ namespace Broker
             //deve receber o porto nos argumentos. Hope so...
             //tcpchannel dadURL routingPolicy processURL
            
-            // TcpChannel channel = new TcpChannel(Int32.Parse(args[0]));
-            TcpChannel channel = new TcpChannel(8086);
+            TcpChannel channel = new TcpChannel(Int32.Parse(args[0]));
+            //TcpChannel channel = new TcpChannel(8086);
             ChannelServices.RegisterChannel(channel, false);
             BrokerServices brk = new BrokerServices();
-            RemotingServices.Marshal(brk,
-                "SonBroker",
-                typeof(BrokerServices));
-              
+            RemotingServices.Marshal(brk, "SonBroker", typeof(BrokerServices));
+
+         //   PublisherImpl publisherInterface = new PublisherImpl();
+           // RemotingServices.Marshal(publisherInterface, "PublisherInterface", typeof(PublisherInterface));
+
             Console.WriteLine("New broker listening at tcp://localhost:8086/Broker");  
             System.Console.WriteLine("Press <enter> to terminate Broker...");
             System.Console.ReadLine();

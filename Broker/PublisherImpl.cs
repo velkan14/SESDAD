@@ -11,7 +11,7 @@ namespace Broker
     {
         public void publishEvent(Event newEvent)
         {
-            throw new NotImplementedException();
+            Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
         }
     }
 }

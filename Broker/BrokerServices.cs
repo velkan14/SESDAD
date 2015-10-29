@@ -48,7 +48,9 @@ namespace Broker
 
         public void publish(Event newEvent)
         {
-            if (flooding)
+
+            Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
+            /*if (flooding)
             {
                 if (dad != null) { dad.publish(newEvent); }
                 foreach (BrokerInterface son in sons) { son.publish(newEvent); }
@@ -57,7 +59,7 @@ namespace Broker
             else
             {
                 //TODO
-            }
+            }*/
 
 
 

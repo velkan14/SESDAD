@@ -11,11 +11,11 @@ namespace Publisher
 {
     class PMPublisherImpl : MarshalByRefObject, PMPublisher
     {
-        private PublisherInterface broker;
+        private BrokerInterface broker;
         private bool freezeFlag = false;
         private string processName;
 
-        public PMPublisherImpl(PublisherInterface broker, string processName)
+        public PMPublisherImpl(BrokerInterface broker, string processName)
         {
             this.broker = broker;
             this.processName = processName;
@@ -28,7 +28,8 @@ namespace Publisher
 
         public void freeze()
         {
-            this.freezeFlag = true;
+            freezeFlag = true;
+            //Monitor.Wait(broker);
         }
 
         public void publish(int number, string topic, int interval)
@@ -36,19 +37,21 @@ namespace Publisher
             for(int i = 0; i < number; i++)
             {
                 Event e = new Event(topic, String.Concat(processName + " :", i));
-                broker.publishEvent(e);
+                broker.publish(e);
                 Thread.Sleep(interval);
             }
         }
 
         public void status()
         {
+            
             throw new NotImplementedException();
         }
 
         public void unfreeze()
         {
-            this.freezeFlag = false;
+            freezeFlag = false;
+            //Monitor.Pulse(broker);
         }
     }
 }

@@ -13,15 +13,24 @@ namespace Publisher
 {
     class Program
     {
+        /**
+        * processName portPublisher urlBroker
+        **/
         static void Main(string[] args)
         {
-            
-            string portBroker = "";
-            TcpChannel channel = new TcpChannel();
+
+            string processName = args[0];
+            int portPublisher = Int32.Parse(args[1]);
+            string urlBroker = args[2];
+
+            TcpChannel channel = new TcpChannel(portPublisher);
             ChannelServices.RegisterChannel(channel, false);
-            PublisherInterface broker = (PublisherInterface)Activator.GetObject(typeof(PublisherInterface), "tcp://localhost:" + portBroker + "/PublisherInterface");
-            PMPublisherImpl publisher = new PMPublisherImpl(broker, "processName");
+            BrokerInterface broker = (BrokerInterface)Activator.GetObject(typeof(BrokerInterface), urlBroker);
+            PMPublisherImpl publisher = new PMPublisherImpl(broker, processName);
             RemotingServices.Marshal(publisher, "PMPublisher", typeof(PMPublisher));
+            Console.ReadLine();
+            publisher.freeze();
+            publisher.publish(5, "Toy", 1000);
             Console.ReadLine();
         }
     }
