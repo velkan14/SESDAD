@@ -15,19 +15,21 @@ namespace Broker
        
         static void Main(string[] args)
         {
-            //deve receber o porto nos argumentos. Hope so...
-            //tcpchannel dadURL routingPolicy processURL
+            string processName = args[0];
+            string url = args[1];
+            string routing = args[2];
+            string ordering = args[3];
+            string port = url.Split(':')[2].Split('/')[0];
+
+            Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering); 
+
            
-            TcpChannel channel = new TcpChannel(Int32.Parse(args[0]));
-            //TcpChannel channel = new TcpChannel(8086);
+            TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
             BrokerServices brk = new BrokerServices();
-            RemotingServices.Marshal(brk, "SonBroker", typeof(BrokerServices));
+            RemotingServices.Marshal(brk, "BrokerServices", typeof(BrokerServices));
 
-         //   PublisherImpl publisherInterface = new PublisherImpl();
-           // RemotingServices.Marshal(publisherInterface, "PublisherInterface", typeof(PublisherInterface));
-
-            Console.WriteLine("New broker listening at tcp://localhost:8086/Broker");  
+            Console.WriteLine("New broker listening at " + url);
             System.Console.WriteLine("Press <enter> to terminate Broker...");
             System.Console.ReadLine();
         }   
