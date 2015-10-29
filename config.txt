@@ -1,4 +1,5 @@
 Process broker0 Is broker On site0 URL tcp://localhost:3333/broker
-Process publisher0 Is publisher On site0 URL tcp://1.2.3.4:3334/pub
-Process subscriber0 Is subscriber On site0 URL tcp://1.2.3.4:3335/sub
-Process subscriber1 Is subscriber On site0 URL tcp://1.2.3.4:3336/sub
+Process broker1 Is broker On site1 URL tcp://localhost:3334/broker
+Process publisher0 Is publisher On site0 URL tcp://localhost:3335/pub
+Process subscriber0 Is subscriber On site0 URL tcp://localhost:3336/sub
+Process subscriber1 Is subscriber On site0 URL tcp://localhost:3337/sub
