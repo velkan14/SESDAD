@@ -22,13 +22,13 @@ namespace PuppetMaster
 
         }
 
-        void subscribe() { }
-        void unsubscribe() { }
-        void publish() { }
-        void status() { }
-        void crash() { }
-        void freeze() { }
-        void unfreeze() { }
-        void wait() { }
+        public void subscribe() { }
+        public void unsubscribe() { }
+        public void publish() { }
+        public void status() { }
+        public void crash() { }
+        public void freeze() { }
+        public void unfreeze() { }
+        public void wait() { }
     }
 }
