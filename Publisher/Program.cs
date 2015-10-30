@@ -31,7 +31,7 @@ namespace Publisher
             RemotingServices.Marshal(publisher, remotingName + "PM", typeof(PMPublisher));
             //Console.ReadLine();
             //publisher.freeze();
-            publisher.publish(5, "Toy", 2000);
+            //publisher.publish(5, "Toy", 2000);
             Console.ReadLine();
         }
     }

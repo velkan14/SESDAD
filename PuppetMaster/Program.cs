@@ -24,6 +24,8 @@ namespace PuppetMaster
             string routingPolicy = "flooding";
             string ordering = "FIFO";
             List<Site> sites = new List<Site>();
+            Dictionary<string, PMPublisher> publisherDict = new Dictionary<string, PMPublisher>();
+            Dictionary<string, PMInterface> subscriberDict = new Dictionary<string, PMInterface>();
             TcpChannel channel = new TcpChannel(PUPPETMASTER_IP);
             ChannelServices.RegisterChannel(channel, false);
             PM pm = new PM();
@@ -77,20 +79,27 @@ namespace PuppetMaster
                                 string ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
                                 string processName = splitedConfig[1];
                                 string site = splitedConfig[5];
-                                string publisherUrl = splitedConfig[7];
+                                string URL = splitedConfig[7];
                                 string brokerURL = findSiteByName(sites, site).BrokerOnSiteURL;
 
                                 PMInterface obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
-                                obj.createPublisher(processName, publisherUrl, brokerURL);
+                                obj.createPublisher(processName, URL, brokerURL);
+                                
+                                publisherDict.Add(processName, (PMPublisher)Activator.GetObject(typeof(PMPublisher),
+                                    URL+"PM"));
                                 break;
                             case 2:
                                 //Process \\w + Is subscriber On \\w + URL \\w +
                                 ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
-                                brokerURL = findSiteByName(sites, splitedConfig[5]).BrokerOnSiteURL;
+                                processName = splitedConfig[1];
+                                site = splitedConfig[5];
+                                URL = splitedConfig[7];
+                                brokerURL = findSiteByName(sites, site).BrokerOnSiteURL;
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
-                                obj.createSubscriber(splitedConfig[1], splitedConfig[7], brokerURL);
+                                obj.createSubscriber(processName, URL, brokerURL);
+                                subscriberDict.Add(processName, obj);
                                 break;
                             case 3:
                                 //Process \\w+ Is broker On \\w+ URL \\w+
@@ -171,6 +180,7 @@ namespace PuppetMaster
 
                         string[] words = match.Captures[0].Value.Split(' ');
 
+                        
                         switch (commandNumber + 1)
                         {
                             case 1:
@@ -185,10 +195,9 @@ namespace PuppetMaster
                                 break;
                             case 3:
                                 //Publisher \\w+ Publish \\d+ Ontopic [\\w/]+ Interval \\d+
-                                Console.WriteLine(words[1]);
-                                Console.WriteLine(words[3]);
-                                Console.WriteLine(words[5]);
-                                Console.WriteLine(words[7]);
+                                PMPublisher pub;
+                                publisherDict.TryGetValue(words[1], out pub);
+                                pub.publish(Int32.Parse(words[3]), words[5], Int32.Parse(words[7]));
                                 break;
                             case 4:
                                 //Status
