@@ -32,6 +32,7 @@ namespace Publisher
             //Console.ReadLine();
             //publisher.freeze();
             //publisher.publish(5, "Toy", 2000);
+            Console.WriteLine(processName + " started on " + myURL);
             Console.ReadLine();
         }
     }

@@ -22,15 +22,19 @@ namespace Broker
             string ordering = args[3];
             string port = url.Split(':')[2].Split('/')[0];
             string remotingName = url.Split('/')[3];
-            Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering); 
+            Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
 
-           
+            BrokerInterface dad = null;
+            List<BrokerInterface> sons = new List<BrokerInterface>();
+
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
-            BrokerServices brk = new BrokerServices();
-            RemotingServices.Marshal(brk, remotingName, typeof(BrokerServices));
-            PMBrokerImpl PMbroker = new PMBrokerImpl();
+            PMBrokerImpl PMbroker = new PMBrokerImpl(sons, dad);
             RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));
+
+            BrokerServices brk = new BrokerServices(dad, sons);
+            RemotingServices.Marshal(brk, remotingName, typeof(BrokerServices));
+            
 
             Console.WriteLine("New broker listening at " + url);
             System.Console.WriteLine("Press <enter> to terminate Broker...");

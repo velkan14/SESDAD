@@ -4,24 +4,34 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommonTypesPM;
+using CommonTypes;
 
 namespace Broker
 {
+    
+
     class PMBrokerImpl : MarshalByRefObject, PMBroker
     {
+        List<BrokerInterface> sons;
+        BrokerInterface dad;
+        public PMBrokerImpl(List<BrokerInterface> sons, BrokerInterface dad) {
+            this.sons = sons;
+            this.dad = dad;
+
+        }
         public void addDad(string url)
         {
-           // throw new NotImplementedException();
+            dad = (BrokerInterface)Activator.GetObject(typeof(BrokerInterface), url);
         }
 
         public void addSon(string url)
         {
-            //throw new NotImplementedException();
+            sons.Add((BrokerInterface)Activator.GetObject(typeof(BrokerInterface), url));
         }
 
         public void crash()
         {
-            throw new NotImplementedException();
+            System.Environment.Exit(1);
         }
 
         public void freeze()

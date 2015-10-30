@@ -25,7 +25,8 @@ namespace PuppetMaster
             string ordering = "FIFO";
             List<Site> sites = new List<Site>();
             Dictionary<string, PMPublisher> publisherDict = new Dictionary<string, PMPublisher>();
-            Dictionary<string, PMInterface> subscriberDict = new Dictionary<string, PMInterface>();
+            Dictionary<string, PMSubscriber> subscriberDict = new Dictionary<string, PMSubscriber>();
+            Dictionary<string, PMBroker> brokerDict = new Dictionary<string, PMBroker>();
             TcpChannel channel = new TcpChannel(PUPPETMASTER_IP);
             ChannelServices.RegisterChannel(channel, false);
             PM pm = new PM();
@@ -99,7 +100,8 @@ namespace PuppetMaster
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
                                 obj.createSubscriber(processName, URL, brokerURL);
-                                subscriberDict.Add(processName, obj);
+                                subscriberDict.Add(processName, (PMSubscriber)Activator.GetObject(typeof(PMSubscriber),
+                                    URL + "PM"));
                                 break;
                             case 3:
                                 //Process \\w+ Is broker On \\w+ URL \\w+
@@ -115,6 +117,8 @@ namespace PuppetMaster
                                 tmpSite.BrokerOnSiteURL = URL;
                                 PMBroker broker = (PMBroker)Activator.GetObject(typeof(PMBroker),
                                     URL+"PM");
+                                brokerDict.Add(processName, broker);
+
                                 if (!tmpSite.getDad().Equals("none"))
                                 {
                                     PMBroker brokerDad = (PMBroker)Activator.GetObject(typeof(PMBroker),
@@ -126,6 +130,7 @@ namespace PuppetMaster
                                 {
                                     broker.addSon(son);
                                 }
+                                
                                 break;
                             case 4:
                                 //RoutingPolicy flooding
@@ -218,18 +223,79 @@ namespace PuppetMaster
                             case 4:
                                 //Status
                                 Console.WriteLine(words[0]);
+                                foreach (KeyValuePair<string, PMPublisher> tmp in publisherDict) {
+                                    tmp.Value.status();
+                                }
+                                foreach (KeyValuePair<string, PMSubscriber> tmp in subscriberDict)
+                                {
+                                    tmp.Value.status();
+                                }
+                                foreach (KeyValuePair<string, PMBroker> tmp in brokerDict)
+                                {
+                                    tmp.Value.status();
+                                }
                                 break;
                             case 5:
                                 //Crash \\w+
-                                Console.WriteLine(words[1]);
+                                string processName = words[1];
+                                if (publisherDict.ContainsKey(processName))
+                                {
+                                    publisherDict.TryGetValue(words[1], out pub);
+                                    pub.crash();
+                                } else if (subscriberDict.ContainsKey(processName))
+                                {
+                                    PMPublisher sub;
+                                    publisherDict.TryGetValue(words[1], out sub);
+                                    sub.crash();
+                                }
+                                else if (brokerDict.ContainsKey(processName))
+                                {
+                                    PMPublisher brk;
+                                    publisherDict.TryGetValue(words[1], out brk);
+                                    brk.crash();
+                                }
                                 break;
                             case 6:
                                 //Freeze \\w+
-                                Console.WriteLine(words[1]);
+                                processName = words[1];
+                                if (publisherDict.ContainsKey(processName))
+                                {
+                                    publisherDict.TryGetValue(words[1], out pub);
+                                    pub.freeze();
+                                }
+                                else if (subscriberDict.ContainsKey(processName))
+                                {
+                                    PMPublisher sub;
+                                    publisherDict.TryGetValue(words[1], out sub);
+                                    sub.freeze();
+                                }
+                                else if (brokerDict.ContainsKey(processName))
+                                {
+                                    PMPublisher brk;
+                                    publisherDict.TryGetValue(words[1], out brk);
+                                    brk.freeze();
+                                }
                                 break;
                             case 7:
                                 //Unfreeze \\w+
-                                Console.WriteLine(words[1]);
+                                processName = words[1];
+                                if (publisherDict.ContainsKey(processName))
+                                {
+                                    publisherDict.TryGetValue(words[1], out pub);
+                                    pub.unfreeze();
+                                }
+                                else if (subscriberDict.ContainsKey(processName))
+                                {
+                                    PMPublisher sub;
+                                    publisherDict.TryGetValue(words[1], out sub);
+                                    sub.unfreeze();
+                                }
+                                else if (brokerDict.ContainsKey(processName))
+                                {
+                                    PMPublisher brk;
+                                    publisherDict.TryGetValue(words[1], out brk);
+                                    brk.unfreeze();
+                                }
                                 break;
                             case 8:
                                 //Wait \\d+

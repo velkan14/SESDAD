@@ -10,14 +10,17 @@ namespace Broker
     public class BrokerServices : MarshalByRefObject, BrokerInterface
     {
         string processName;
-        BrokerServices dad;
-        List<BrokerInterface> sons;
+
         List<SubscriberInterface> subs;
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
         bool flooding;
+        private BrokerInterface dad;
+        private List<BrokerInterface> sons;
 
-        public BrokerServices(/*string dadURL, string routingPolicy*/)
+        public BrokerServices(BrokerInterface dad, List<BrokerInterface> sons)
         {
+            this.dad = dad;
+            this.sons = sons;
             //     if (!dadURL.Equals("none")) {
             //        dad = (BrokerServices)Activator.GetObject(
             //    typeof(BrokerServices), dadURL);
