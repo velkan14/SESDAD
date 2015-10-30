@@ -23,7 +23,7 @@ namespace PuppetMaster
         {
             string routingPolicy = "flooding";
             string ordering = "FIFO";
-
+            List<Site> sites = new List<Site>();
             TcpChannel channel = new TcpChannel(PUPPETMASTER_IP);
             ChannelServices.RegisterChannel(channel, false);
             PM pm = new PM();
@@ -66,20 +66,27 @@ namespace PuppetMaster
                         {
                             case 0:
                                 //Site \\w + Parent \\w +
+                                Site sitio;
+                                string sitename = splitedConfig[1];
+                                string parentName = splitedConfig[3];
+                                sitio = new Site(sitename, findSiteByName(sites, parentName));        
+                                sites.Add(sitio); 
                                 break;
                             case 1:
                                 //Process \\w+ Is publisher On \\w+ URL \\w+
                                 string ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
+                                string brokerURL = findSiteByName(sites, splitedConfig[5]).BrokerOnSiteURL;
                                 PMInterface obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
-                                obj.createPublisher(splitedConfig[1], splitedConfig[5], splitedConfig[7]);
+                                obj.createPublisher(splitedConfig[1], splitedConfig[5], splitedConfig[7], brokerURL);
                                 break;
                             case 2:
                                 //Process \\w + Is subscriber On \\w + URL \\w +
                                 ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
+                                brokerURL = findSiteByName(sites, splitedConfig[5]).BrokerOnSiteURL;
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
-                                obj.createSubscriber(splitedConfig[1], splitedConfig[5], splitedConfig[7]);
+                                obj.createSubscriber(splitedConfig[1], splitedConfig[5], splitedConfig[7], brokerURL);
                                 break;
                             case 3:
                                 //Process \\w+ Is broker On \\w+ URL \\w+
@@ -87,6 +94,9 @@ namespace PuppetMaster
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface), 
                                     "tcp://"+ipPM+":8086/PMInterface");
                                 obj.createBroker(splitedConfig[1], splitedConfig[5], splitedConfig[7], routingPolicy, ordering);
+                                //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
+                                Site tmpSite = findSiteByName(sites, splitedConfig[5]);
+                                tmpSite.BrokerOnSiteURL = splitedConfig[7];
                                 break;
                             case 4:
                                 //RoutingPolicy flooding
@@ -197,6 +207,17 @@ namespace PuppetMaster
                 }
             }
 
+        }
+
+        //espero que este static nao cause problemas. Yolo!
+        public static Site findSiteByName(List<Site> sites, string sitename){
+            if (!sitename.Equals("none")) {
+                foreach (Site site in sites) {
+                    if (site.Sitename.Equals(sitename))
+                        return site;
+                }
+            }
+            return null;
         }
     }
 }
