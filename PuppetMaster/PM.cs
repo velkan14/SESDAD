@@ -10,17 +10,17 @@ namespace PuppetMaster
 {
     class PM : MarshalByRefObject, PMInterface
     {
-        public void createSubscriber(string processName, string site, string url)
+        public void createSubscriber(string processName, string url, string urlBroker)
         {
-            Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url);
+            Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url + " " + urlBroker);
         }
-        public void createBroker(string processName, string site, string url, string routing, string ordering)
+        public void createBroker(string processName, string url, string routing, string ordering)
         {
             Process.Start(@"..\..\..\Broker\bin\Debug\broker.exe", processName + " " + url +" "+ routing +" "+ ordering);
         }
-        public void createPublisher(string processName, string site, string url)
+        public void createPublisher(string processName, string url, string urlBroker)
         {
-            Process.Start(@"..\..\..\Publisher\bin\Debug\publisher.exe", processName + " " + url);
+            Process.Start(@"..\..\..\Publisher\bin\Debug\publisher.exe", processName + " " + url + " " + urlBroker);
         }
 
         public void subscribe() { }

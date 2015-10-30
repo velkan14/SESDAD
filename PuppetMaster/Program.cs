@@ -75,10 +75,14 @@ namespace PuppetMaster
                             case 1:
                                 //Process \\w+ Is publisher On \\w+ URL \\w+
                                 string ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
-                                string brokerURL = findSiteByName(sites, splitedConfig[5]).BrokerOnSiteURL;
+                                string processName = splitedConfig[1];
+                                string site = splitedConfig[5];
+                                string publisherUrl = splitedConfig[7];
+                                string brokerURL = findSiteByName(sites, site).BrokerOnSiteURL;
+
                                 PMInterface obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
-                                obj.createPublisher(splitedConfig[1], splitedConfig[5], splitedConfig[7], brokerURL);
+                                obj.createPublisher(processName, publisherUrl, brokerURL);
                                 break;
                             case 2:
                                 //Process \\w + Is subscriber On \\w + URL \\w +
@@ -86,14 +90,14 @@ namespace PuppetMaster
                                 brokerURL = findSiteByName(sites, splitedConfig[5]).BrokerOnSiteURL;
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                     "tcp://" + ipPM + ":8086/PMInterface");
-                                obj.createSubscriber(splitedConfig[1], splitedConfig[5], splitedConfig[7], brokerURL);
+                                obj.createSubscriber(splitedConfig[1], splitedConfig[7], brokerURL);
                                 break;
                             case 3:
                                 //Process \\w+ Is broker On \\w+ URL \\w+
                                 ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface), 
                                     "tcp://"+ipPM+":8086/PMInterface");
-                                obj.createBroker(splitedConfig[1], splitedConfig[5], splitedConfig[7], routingPolicy, ordering);
+                                obj.createBroker(splitedConfig[1], splitedConfig[7], routingPolicy, ordering);
                                 //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
                                 Site tmpSite = findSiteByName(sites, splitedConfig[5]);
                                 tmpSite.BrokerOnSiteURL = splitedConfig[7];
@@ -170,32 +174,40 @@ namespace PuppetMaster
                         switch (commandNumber + 1)
                         {
                             case 1:
+                                //Subscriber \\w+ Subscribe [\\w/]+
                                 Console.WriteLine(words[1]);
                                 Console.WriteLine(words[3]);
                                 break;
                             case 2:
+                                //Subscriber \\w+ Unsubscribe [\\w/]+
                                 Console.WriteLine(words[1]);
                                 Console.WriteLine(words[3]);
                                 break;
                             case 3:
+                                //Publisher \\w+ Publish \\d+ Ontopic [\\w/]+ Interval \\d+
                                 Console.WriteLine(words[1]);
                                 Console.WriteLine(words[3]);
                                 Console.WriteLine(words[5]);
                                 Console.WriteLine(words[7]);
                                 break;
                             case 4:
+                                //Status
                                 Console.WriteLine(words[0]);
                                 break;
                             case 5:
+                                //Crash \\w+
                                 Console.WriteLine(words[1]);
                                 break;
                             case 6:
+                                //Freeze \\w+
                                 Console.WriteLine(words[1]);
                                 break;
                             case 7:
+                                //Unfreeze \\w+
                                 Console.WriteLine(words[1]);
                                 break;
                             case 8:
+                                //Wait \\d+
                                 Console.WriteLine(words[1]);
                                 break;
                             default:

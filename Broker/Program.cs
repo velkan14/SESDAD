@@ -20,14 +20,14 @@ namespace Broker
             string routing = args[2];
             string ordering = args[3];
             string port = url.Split(':')[2].Split('/')[0];
-
+            string remotingName = url.Split('/')[3];
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering); 
 
            
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
             BrokerServices brk = new BrokerServices();
-            RemotingServices.Marshal(brk, "BrokerServices", typeof(BrokerServices));
+            RemotingServices.Marshal(brk, remotingName, typeof(BrokerServices));
 
             Console.WriteLine("New broker listening at " + url);
             System.Console.WriteLine("Press <enter> to terminate Broker...");
