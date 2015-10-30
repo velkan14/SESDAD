@@ -104,12 +104,28 @@ namespace PuppetMaster
                             case 3:
                                 //Process \\w+ Is broker On \\w+ URL \\w+
                                 ipPM = splitedConfig[7].Split(':')[1].Split('/')[2];
+                                processName = splitedConfig[1];
+                                site = splitedConfig[5];
+                                URL = splitedConfig[7];
                                 obj = (PMInterface)Activator.GetObject(typeof(PMInterface), 
                                     "tcp://"+ipPM+":8086/PMInterface");
-                                obj.createBroker(splitedConfig[1], splitedConfig[7], routingPolicy, ordering);
+                                obj.createBroker(processName, URL, routingPolicy, ordering);
                                 //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
-                                Site tmpSite = findSiteByName(sites, splitedConfig[5]);
-                                tmpSite.BrokerOnSiteURL = splitedConfig[7];
+                                Site tmpSite = findSiteByName(sites, site);
+                                tmpSite.BrokerOnSiteURL = URL;
+                                PMBroker broker = (PMBroker)Activator.GetObject(typeof(PMBroker),
+                                    URL+"PM");
+                                if (!tmpSite.getDad().Equals("none"))
+                                {
+                                    PMBroker brokerDad = (PMBroker)Activator.GetObject(typeof(PMBroker),
+                                        tmpSite.getDad() + "PM");
+                                    brokerDad.addSon(URL);
+                                    broker.addDad(tmpSite.getDad());
+                                }
+                                foreach (string son in tmpSite.getSonsBrokersURLs())
+                                {
+                                    broker.addSon(son);
+                                }
                                 break;
                             case 4:
                                 //RoutingPolicy flooding

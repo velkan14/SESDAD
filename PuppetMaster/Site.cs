@@ -35,6 +35,13 @@ namespace PuppetMaster
 
         }
 
+        public string getDad()
+        {
+            if (parent == null) return "none";
+            return parent.BrokerOnSiteURL;
+
+        }
+
         public string BrokerOnSiteURL
         {
             get { return brokerOnSiteURL; }

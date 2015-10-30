@@ -11,12 +11,12 @@ namespace Broker
     {
         public void addDad(string url)
         {
-            throw new NotImplementedException();
+           // throw new NotImplementedException();
         }
 
         public void addSon(string url)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         public void crash()

@@ -7,6 +7,7 @@ using CommonTypes;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using CommonTypesPM;
 
 namespace Broker
 {
@@ -28,6 +29,8 @@ namespace Broker
             ChannelServices.RegisterChannel(channel, false);
             BrokerServices brk = new BrokerServices();
             RemotingServices.Marshal(brk, remotingName, typeof(BrokerServices));
+            PMBrokerImpl PMbroker = new PMBrokerImpl();
+            RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));
 
             Console.WriteLine("New broker listening at " + url);
             System.Console.WriteLine("Press <enter> to terminate Broker...");
