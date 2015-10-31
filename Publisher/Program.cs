@@ -26,7 +26,7 @@ namespace Publisher
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
-            BrokerSubscribeInterface broker = (BrokerSubscribeInterface)Activator.GetObject(typeof(BrokerSubscribeInterface), urlBroker);
+            BrokerPublishInterface broker = (BrokerPublishInterface)Activator.GetObject(typeof(BrokerPublishInterface), urlBroker + "P");
             PMPublisherImpl publisher = new PMPublisherImpl(broker, processName);
             RemotingServices.Marshal(publisher, remotingName + "PM", typeof(PMPublisher));
             //Console.ReadLine();

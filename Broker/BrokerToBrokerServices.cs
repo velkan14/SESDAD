@@ -8,12 +8,13 @@ using System.Threading.Tasks;
 namespace Broker
 {
     class BrokerToBrokerServices : MarshalByRefObject, BrokerToBrokerInterface  {
-        BrokerToBrokerInterface dad;
+        List<BrokerToBrokerInterface> dad;
         List<BrokerToBrokerInterface> sons;
+        List<Event> events = new List<Event>();
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
         string routing;
 
-        public BrokerToBrokerServices(BrokerToBrokerInterface dad, List<BrokerToBrokerInterface> sons, 
+        public BrokerToBrokerServices(List<BrokerToBrokerInterface> dad, List<BrokerToBrokerInterface> sons, 
             Dictionary<string, List<SubscriberInterface>> subscribersByTopic, string routing) {
             this.dad = dad;
             this.sons = sons;
@@ -22,19 +23,31 @@ namespace Broker
         }
 
         public void forwardEvent(Event evt) {
-            if (routing.Equals("flooding")) {
-                if (dad != null) {
-                    dad.forwardEvent(evt);
+            
+            bool exists = false;
+            foreach (Event e in events) if (evt == e) exists = true;
+            if (!exists)
+            {
+                //Console.WriteLine(evt.Topic + ":" + evt.Content);
+                events.Add(evt);
+
+                if (routing.Equals("flooding"))
+                {
+                    foreach (BrokerToBrokerInterface d in dad) d.forwardEvent(evt);
+                    foreach (BrokerToBrokerInterface son in sons)
+                    {
+                        son.forwardEvent(evt);
+                    }
+                    var flattenList = subscribersByTopic.SelectMany(x => x.Value);
+                    foreach (SubscriberInterface sub in flattenList)
+                    {
+                        sub.deliverToSub(evt);
+                    }
                 }
-                foreach (BrokerToBrokerInterface son in sons) {
-                    son.forwardEvent(evt);
+                else
+                {
+                    //TODO
                 }
-                var flattenList = subscribersByTopic.SelectMany(x => x.Value);
-                foreach (SubscriberInterface sub in flattenList) {
-                    sub.deliverToSub(evt);
-                }
-            } else {
-                //TODO
             }
         }
     }

@@ -44,6 +44,16 @@ namespace CommonTypes
             set { content = value; }
         }
 
+        public static bool operator ==(Event a, Event b)
+        {
+            return a.content.Equals(b.Content) && a.Topic.Equals(b.Topic);
+        }
+
+        public static bool operator !=(Event a, Event b)
+        {
+            return a.content.Equals(b.Content) && a.Topic.Equals(b.Topic); ;
+        }
+
     }
     
 

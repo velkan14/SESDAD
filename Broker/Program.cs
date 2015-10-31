@@ -24,13 +24,14 @@ namespace Broker
             string remotingName = url.Split('/')[3];
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
 
-            BrokerToBrokerInterface dad = null;
+            List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
             List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
             Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
-            PMBrokerImpl PMbroker = new PMBrokerImpl(sons, dad);
+
+            PMBrokerImpl PMbroker = new PMBrokerImpl(dad, sons);
             RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));
 
             BrokerSubscribeServices brkSubscribe = new BrokerSubscribeServices(subscribersByTopic);

@@ -15,7 +15,7 @@ namespace Broker
         }
 
         public void publishEvent(Event newEvent) {
-            Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
+            //Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
             broker.forwardEvent(newEvent);
         }
     }

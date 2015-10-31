@@ -8,6 +8,6 @@ Process broker1 Is broker On site1 URL tcp://localhost:3334/broker
 Process broker2 Is broker On site2 URL tcp://localhost:3335/broker
 Process broker3 Is broker On site3 URL tcp://localhost:3336/broker
 Process publisher0 Is publisher On site0 URL tcp://localhost:3337/pub
-Process publisher1 Is publisher On site0 URL tcp://localhost:3338/pub
-Process publisher2 Is publisher On site0 URL tcp://localhost:3339/pub
-Process publisher3 Is publisher On site1 URL tcp://localhost:3340/pub
+rocess publisher1 Is publisher On site0 URL tcp://localhost:3338/pub
+rocess publisher2 Is publisher On site0 URL tcp://localhost:3339/pub
+Process publisher3 Is publisher On site3 URL tcp://localhost:3340/pub
