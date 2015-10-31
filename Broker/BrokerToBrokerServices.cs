@@ -38,11 +38,13 @@ namespace Broker
                     {
                         son.forwardEvent(evt);
                     }
-                    var flattenList = subscribersByTopic.SelectMany(x => x.Value);
-                    foreach (SubscriberInterface sub in flattenList)
-                    {
-                        sub.deliverToSub(evt);
-                    }
+                    //var flattenList = subscribersByTopic.SelectMany(x => x.Value);
+                    List<SubscriberInterface> flattenList;
+                    if(subscribersByTopic.TryGetValue(evt.Topic, out flattenList))
+                        foreach (SubscriberInterface sub in flattenList)
+                        {
+                            sub.deliverToSub(evt);
+                        }
                 }
                 else
                 {
