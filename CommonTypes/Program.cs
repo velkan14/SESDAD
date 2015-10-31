@@ -7,30 +7,25 @@ using System.Threading.Tasks;
 
 namespace CommonTypes
 {
-    public interface SubscriberInterface{
-        //classe para o evento??
+    public interface SubscriberInterface {
         void deliverToSub(Event newEvent);
-
     }
 
-    public interface PublisherInterface
-    {
+    public interface BrokerPublishInterface {
         void publishEvent(Event newEvent);
     }
 
-    public interface EventReceiver
-    {
+    public interface EventReceiver {
 
     }
 
-    public interface BrokerInterface{
+    public interface BrokerSubscribeInterface {
         void subscribe(string topic, string subscriberURL);
-        void unsubscribe(string topic);
-        void publish(Event newEvent);        
+        void unsubscribe(string topic);       
     }
 
     [Serializable]
-    public class Event{
+    public class Event {
         private string topic;
         private string content;
 

@@ -7,7 +7,7 @@ using CommonTypes;
 
 namespace Broker
 {
-    class PublisherImpl : MarshalByRefObject, PublisherInterface
+    class BrokerPublishServices : MarshalByRefObject, BrokerPublishInterface
     {
         public void publishEvent(Event newEvent)
         {

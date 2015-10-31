@@ -7,17 +7,17 @@ using CommonTypes;
 
 namespace Broker
 {
-    public class BrokerServices : MarshalByRefObject, BrokerInterface
+    public class BrokerSubscribeServices : MarshalByRefObject, BrokerSubscribeInterface
     {
         string processName;
 
         List<SubscriberInterface> subs;
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
         bool flooding;
-        private BrokerInterface dad;
-        private List<BrokerInterface> sons;
+        private BrokerSubscribeInterface dad;
+        private List<BrokerSubscribeInterface> sons;
 
-        public BrokerServices(BrokerInterface dad, List<BrokerInterface> sons)
+        public BrokerSubscribeServices(BrokerSubscribeInterface dad, List<BrokerSubscribeInterface> sons)
         {
             this.dad = dad;
             this.sons = sons;
@@ -49,24 +49,24 @@ namespace Broker
             throw new NotImplementedException();
         }
 
-        public void publish(Event newEvent)
+       /* public void publish(Event newEvent)
         {
 
             Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
-            /*if (flooding)
+            if (flooding)
             {
                 if (dad != null) { dad.publish(newEvent); }
-                foreach (BrokerInterface son in sons) { son.publish(newEvent); }
+                foreach (BrokerSubscribeInterface son in sons) { son.publish(newEvent); }
                 foreach (SubscriberInterface sub in subs) { sub.deliverToSub(newEvent); }
             }
             else
             {
                 //TODO
-            }*/
+            }
 
 
 
-        }
+        }*/
 
 
 
