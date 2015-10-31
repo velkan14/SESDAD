@@ -4,11 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommonTypesPM;
+using CommonTypes;
 
 namespace Subscriber
 {
     class PMSubscriberImpl : MarshalByRefObject, PMSubscriber
     {
+        BrokerSubscribeInterface broker;
+        string myUrl;
+
+        public PMSubscriberImpl(BrokerSubscribeInterface broker, string url)
+        {
+            this.broker = broker;
+            this.myUrl = url;
+        }
         public void crash()
         {
             throw new NotImplementedException();
@@ -26,7 +35,7 @@ namespace Subscriber
 
         public void subscribe(string topic)
         {
-            throw new NotImplementedException();
+            broker.subscribe(topic, myUrl);
         }
 
         public void unfreeze()
@@ -36,7 +45,7 @@ namespace Subscriber
 
         public void unsubscribe(string topic)
         {
-            throw new NotImplementedException();
+            broker.unsubscribe(topic);
         }
     }
 }

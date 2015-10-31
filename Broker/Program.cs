@@ -35,7 +35,7 @@ namespace Broker
             RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));
 
             BrokerSubscribeServices brkSubscribe = new BrokerSubscribeServices(subscribersByTopic);
-            RemotingServices.Marshal(brkSubscribe, remotingName, typeof(BrokerSubscribeServices));
+            RemotingServices.Marshal(brkSubscribe, remotingName + "S", typeof(BrokerSubscribeServices));
 
             BrokerToBrokerServices brk = new BrokerToBrokerServices(dad, sons, subscribersByTopic, routing);
             RemotingServices.Marshal(brk, remotingName + "B", typeof(BrokerToBrokerServices));

@@ -206,13 +206,14 @@ namespace PuppetMaster
                         {
                             case 1:
                                 //Subscriber \\w+ Subscribe [\\w/]+
-                                Console.WriteLine(words[1]);
-                                Console.WriteLine(words[3]);
+                                PMSubscriber sub;
+                                subscriberDict.TryGetValue(words[1], out sub);
+                                sub.subscribe(words[3]);
                                 break;
                             case 2:
                                 //Subscriber \\w+ Unsubscribe [\\w/]+
-                                Console.WriteLine(words[1]);
-                                Console.WriteLine(words[3]);
+                                subscriberDict.TryGetValue(words[1], out sub);
+                                sub.unsubscribe(words[3]);
                                 break;
                             case 3:
                                 //Publisher \\w+ Publish \\d+ Ontopic [\\w/]+ Interval \\d+
@@ -244,14 +245,13 @@ namespace PuppetMaster
                                     pub.crash();
                                 } else if (subscriberDict.ContainsKey(processName))
                                 {
-                                    PMPublisher sub;
-                                    publisherDict.TryGetValue(words[1], out sub);
+                                    subscriberDict.TryGetValue(words[1], out sub);
                                     sub.crash();
                                 }
                                 else if (brokerDict.ContainsKey(processName))
                                 {
-                                    PMPublisher brk;
-                                    publisherDict.TryGetValue(words[1], out brk);
+                                    PMBroker brk;
+                                    brokerDict.TryGetValue(words[1], out brk);
                                     brk.crash();
                                 }
                                 break;
@@ -265,14 +265,14 @@ namespace PuppetMaster
                                 }
                                 else if (subscriberDict.ContainsKey(processName))
                                 {
-                                    PMPublisher sub;
-                                    publisherDict.TryGetValue(words[1], out sub);
+                                    
+                                    subscriberDict.TryGetValue(words[1], out sub);
                                     sub.freeze();
                                 }
                                 else if (brokerDict.ContainsKey(processName))
                                 {
-                                    PMPublisher brk;
-                                    publisherDict.TryGetValue(words[1], out brk);
+                                    PMBroker brk;
+                                    brokerDict.TryGetValue(words[1], out brk);
                                     brk.freeze();
                                 }
                                 break;
@@ -286,14 +286,13 @@ namespace PuppetMaster
                                 }
                                 else if (subscriberDict.ContainsKey(processName))
                                 {
-                                    PMPublisher sub;
-                                    publisherDict.TryGetValue(words[1], out sub);
+                                    subscriberDict.TryGetValue(words[1], out sub);
                                     sub.unfreeze();
                                 }
                                 else if (brokerDict.ContainsKey(processName))
                                 {
-                                    PMPublisher brk;
-                                    publisherDict.TryGetValue(words[1], out brk);
+                                    PMBroker brk;
+                                    brokerDict.TryGetValue(words[1], out brk);
                                     brk.unfreeze();
                                 }
                                 break;

@@ -11,7 +11,7 @@ namespace Subscriber
     {
         public void deliverToSub(Event evt)
         {
-            throw new NotImplementedException();
+            Console.WriteLine(evt.Topic + ": " + evt.Content);
         }
     }
 }

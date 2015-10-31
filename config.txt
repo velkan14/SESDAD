@@ -11,3 +11,5 @@ Process publisher0 Is publisher On site0 URL tcp://localhost:3337/pub
 rocess publisher1 Is publisher On site0 URL tcp://localhost:3338/pub
 rocess publisher2 Is publisher On site0 URL tcp://localhost:3339/pub
 Process publisher3 Is publisher On site3 URL tcp://localhost:3340/pub
+Process sub0 Is subscriber On site0 URL tcp://localhost:3341/sub
+Process sub1 Is subscriber On site3 URL tcp://localhost:3342/sub
