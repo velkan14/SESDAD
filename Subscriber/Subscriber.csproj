@@ -43,7 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EventReceiverImpl.cs" />
+    <Compile Include="SubscriberImpl.cs" />
     <Compile Include="PMSubscriberImpl.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

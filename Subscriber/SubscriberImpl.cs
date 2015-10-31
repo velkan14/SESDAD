@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using CommonTypes;
 
-namespace Broker
+namespace Subscriber
 {
     class SubscriberImpl : MarshalByRefObject, SubscriberInterface
     {
-        public void deliverToSub(Event newEvent)
+        public void deliverToSub(Event evt)
         {
             throw new NotImplementedException();
         }

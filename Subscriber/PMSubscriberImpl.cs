@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CommonTypesPM;
 
-namespace Publisher
+namespace Subscriber
 {
     class PMSubscriberImpl : MarshalByRefObject, PMSubscriber
     {
