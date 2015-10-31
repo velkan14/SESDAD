@@ -10,25 +10,11 @@ namespace Broker
     public class BrokerSubscribeServices : MarshalByRefObject, BrokerSubscribeInterface
     {
         string processName;
-
-        List<SubscriberInterface> subs;
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
-        bool flooding;
-        private BrokerSubscribeInterface dad;
-        private List<BrokerSubscribeInterface> sons;
 
-        public BrokerSubscribeServices(BrokerSubscribeInterface dad, List<BrokerSubscribeInterface> sons)
+        public BrokerSubscribeServices(Dictionary<string, List<SubscriberInterface>> subscribersByTopic)
         {
-            this.dad = dad;
-            this.sons = sons;
-            //     if (!dadURL.Equals("none")) {
-            //        dad = (BrokerServices)Activator.GetObject(
-            //    typeof(BrokerServices), dadURL);
-            //    }
-            //     if (routingPolicy.Equals("flooding"))
-            //         flooding = true;
-            //    else
-            //       flooding = false;
+            this.subscribersByTopic = subscribersByTopic; 
         }
 
         public void subscribe(string topic, string subscriberURL)
@@ -48,27 +34,6 @@ namespace Broker
         {
             throw new NotImplementedException();
         }
-
-       /* public void publish(Event newEvent)
-        {
-
-            Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
-            if (flooding)
-            {
-                if (dad != null) { dad.publish(newEvent); }
-                foreach (BrokerSubscribeInterface son in sons) { son.publish(newEvent); }
-                foreach (SubscriberInterface sub in subs) { sub.deliverToSub(newEvent); }
-            }
-            else
-            {
-                //TODO
-            }
-
-
-
-        }*/
-
-
 
     }
 }

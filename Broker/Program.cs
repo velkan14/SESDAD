@@ -24,17 +24,23 @@ namespace Broker
             string remotingName = url.Split('/')[3];
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
 
-            BrokerSubscribeInterface dad = null;
-            List<BrokerSubscribeInterface> sons = new List<BrokerSubscribeInterface>();
+            BrokerToBrokerInterface dad = null;
+            List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
+            Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
             PMBrokerImpl PMbroker = new PMBrokerImpl(sons, dad);
             RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));
 
-            BrokerSubscribeServices brk = new BrokerSubscribeServices(dad, sons);
-            RemotingServices.Marshal(brk, remotingName, typeof(BrokerSubscribeServices));
-            
+            BrokerSubscribeServices brkSubscribe = new BrokerSubscribeServices(subscribersByTopic);
+            RemotingServices.Marshal(brkSubscribe, remotingName, typeof(BrokerSubscribeServices));
+
+            BrokerToBrokerServices brk = new BrokerToBrokerServices(dad, sons, subscribersByTopic, routing);
+            RemotingServices.Marshal(brk, remotingName + "B", typeof(BrokerToBrokerServices));
+
+            BrokerPublishServices brkPublish = new BrokerPublishServices(brk);
+            RemotingServices.Marshal(brkPublish, remotingName +"P", typeof(BrokerPublishServices));
 
             Console.WriteLine("New broker listening at " + url);
             System.Console.WriteLine("Press <enter> to terminate Broker...");

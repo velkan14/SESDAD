@@ -12,21 +12,21 @@ namespace Broker
 
     class PMBrokerImpl : MarshalByRefObject, PMBroker
     {
-        List<BrokerSubscribeInterface> sons;
-        BrokerSubscribeInterface dad;
-        public PMBrokerImpl(List<BrokerSubscribeInterface> sons, BrokerSubscribeInterface dad) {
+        List<BrokerToBrokerInterface> sons;
+        BrokerToBrokerInterface dad;
+        public PMBrokerImpl(List<BrokerToBrokerInterface> sons, BrokerToBrokerInterface dad) {
             this.sons = sons;
             this.dad = dad;
 
         }
         public void addDad(string url)
         {
-            dad = (BrokerSubscribeInterface)Activator.GetObject(typeof(BrokerSubscribeInterface), url);
+            dad = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url);
         }
 
         public void addSon(string url)
         {
-            sons.Add((BrokerSubscribeInterface)Activator.GetObject(typeof(BrokerSubscribeInterface), url));
+            sons.Add((BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url));
         }
 
         public void crash()

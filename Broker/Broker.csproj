@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BrokerSubscribeServices.cs" />
+    <Compile Include="BrokerToBrokerServices.cs" />
     <Compile Include="PMBrokerImpl.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

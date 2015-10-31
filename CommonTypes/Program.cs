@@ -8,15 +8,15 @@ using System.Threading.Tasks;
 namespace CommonTypes
 {
     public interface SubscriberInterface {
-        void deliverToSub(Event newEvent);
+        void deliverToSub(Event evt);
     }
 
     public interface BrokerPublishInterface {
         void publishEvent(Event newEvent);
     }
 
-    public interface EventReceiver {
-
+    public interface BrokerToBrokerInterface {
+        void forwardEvent(Event evt);
     }
 
     public interface BrokerSubscribeInterface {
