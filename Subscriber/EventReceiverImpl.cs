@@ -7,7 +7,11 @@ using CommonTypes;
 
 namespace Publisher
 {
-    class EventReceiverImpl : MarshalByRefObject, EventReceiver
+    class EventReceiverImpl : MarshalByRefObject, SubscriberInterface
     {
+        public void deliverToSub(Event evt)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
