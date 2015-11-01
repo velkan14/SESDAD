@@ -14,6 +14,7 @@ namespace Publisher
         private BrokerPublishInterface broker;
         private bool freezeFlag = false;
         private string processName;
+        private int eventContent = 0;
 
         public PMPublisherImpl(BrokerPublishInterface broker, string processName)
         {
@@ -36,7 +37,7 @@ namespace Publisher
         {
             for(int i = 0; i < number; i++)
             {
-                Event e = new Event(topic, String.Concat(processName + " :", i));
+                Event e = new Event(topic, String.Concat(processName + " :", eventContent++));
                 broker.publishEvent(e);
                 Thread.Sleep(interval);
             }

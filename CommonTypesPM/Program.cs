@@ -11,6 +11,7 @@ namespace CommonTypesPM
         void createSubscriber(string processName, string url, string brokerURL);
         void createBroker(string processName, string url, string routing, string ordering);
         void createPublisher(string processName, string url, string brokerURL);
+        void status();
     }
 
     public interface NotificationReceiver
