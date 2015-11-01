@@ -1,0 +1,5 @@
+Subscriber sub0 Subscribe /topic/pub3/
+Subscriber sub1 Subscribe /topic/pub0/
+Publisher publisher3 Publish 5 Ontopic /topic/pub3/ Interval 1000
+Publisher publisher0 Publish 3 Ontopic /topic/pub0/ Interval 1000
+Publisher publisher3 Publish 5 Ontopic /topic/pub3/ Interval 1000
