@@ -41,6 +41,9 @@ namespace PuppetMaster
             * Ordering NO|FIFO|TOTAL
             **/
 
+            //empty log file
+            File.WriteAllText(@"..\..\..\log.txt", String.Empty);
+
             String[] configFormat = new String[MAX_CONFIG_NUM]{ "Site \\w+ Parent \\w+",
                                             "Process \\w+ Is publisher On \\w+ URL \\w+",
                                             "Process \\w+ Is subscriber On \\w+ URL \\w+",

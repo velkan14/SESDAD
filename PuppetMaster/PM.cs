@@ -11,6 +11,19 @@ namespace PuppetMaster
 {
     class PM : MarshalByRefObject, PMInterface, NotificationReceiver
     {
+
+        private string loggingLevel;
+
+        //The publication of an event by a publisher should appear in the log as:
+        //PubEvent publisher-processname, publisher-processname, topicname, event-number
+
+        //The forwarding of an event by a broker should appear in the log as:
+        //BroEvent broker-processname, publisher-processname, topicname, event-number
+
+        //The delivery of an event to a subscriber should appear in the log as:
+        //SubEvent subscriber-processname, publisher-processname, topicname, event-number
+
+
         public void log(string logMessage)
         {
             using (StreamWriter w = File.AppendText(@"..\..\..\log.txt"))
