@@ -10,6 +10,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using CommonTypesPM;
 using System.IO;
+using System.Threading;
 
 namespace PuppetMaster
 {
@@ -287,17 +288,20 @@ namespace PuppetMaster
                             {
                                 publisherDict.TryGetValue(words[1], out pub);
                                 pub.crash();
+                                publisherDict.Remove(words[1]);
                             }
                             else if (subscriberDict.ContainsKey(processName))
                             {
                                 subscriberDict.TryGetValue(words[1], out sub);
                                 sub.crash();
+                                subscriberDict.Remove(words[1]);
                             }
                             else if (brokerDict.ContainsKey(processName))
                             {
                                 PMBroker brk;
                                 brokerDict.TryGetValue(words[1], out brk);
                                 brk.crash();
+                                brokerDict.Remove(words[1]);
                             }
                             pm.log(input);
                             break;
@@ -348,6 +352,7 @@ namespace PuppetMaster
                             //Wait \\d+
                             Console.WriteLine(words[1]);
                             pm.log(input);
+                            Thread.Sleep(Int32.Parse(words[1]));
                             break;
                         default:
                             Console.WriteLine("Default case");

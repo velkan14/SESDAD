@@ -6,52 +6,73 @@ using System.Threading.Tasks;
 using CommonTypes;
 using CommonTypesPM;
 using System.Threading;
+using System.Runtime.Remoting.Messaging;
 
 namespace Publisher
 {
     class PMPublisherImpl : MarshalByRefObject, PMPublisher
     {
-        private BrokerPublishInterface broker;
-        private bool freezeFlag = false;
-        private string processName;
-        private int eventContent = 0;
+
+        Publisher pub;
+        List<publisherAsyncPublish> asyncPublishList = new List<publisherAsyncPublish>();
+        List<publisherAsyncDoSomething> asyncSomethingList = new List<publisherAsyncDoSomething>();
+        public delegate void publisherAsyncPublish(int number, string topic, int interval);
+        public delegate void publisherAsyncDoSomething();
+
+        public static void OurRemoteAsyncCallBack(IAsyncResult ar)
+        {
+            // Alternative 2: Use the callback to get the return value
+            publisherAsyncPublish del = (publisherAsyncPublish)((AsyncResult)ar).AsyncDelegate;
+            del.EndInvoke(ar);
+
+            return;
+        }
 
         public PMPublisherImpl(BrokerPublishInterface broker, string processName)
         {
-            this.broker = broker;
-            this.processName = processName;
+            pub = new Publisher(broker, processName);
         }
 
         public void crash()
         {
-            System.Environment.Exit(1);
+            publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.crash);
+            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);
         }
 
         public void freeze()
         {
-            freezeFlag = true;
+            /*publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.freeze);
+            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);*/
             //Monitor.Wait(broker);
         }
 
         public void publish(int number, string topic, int interval)
         {
-            for(int i = 0; i < number; i++)
-            {
-                Event e = new Event(topic, String.Concat(processName + " :", eventContent++));
-                broker.publishEvent(e);
-                Thread.Sleep(interval);
-            }
+            publisherAsyncPublish RemoteDel = new publisherAsyncPublish(pub.publish);
+            // Create delegate to local callback
+            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
+            // Call remote method
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(number, topic, interval, RemoteCallback, null);
+            asyncPublishList.Add(RemoteDel);
         }
 
         public void status()
         {
+            publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.status);
+
+            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);
             
-            throw new NotImplementedException();
         }
 
         public void unfreeze()
         {
-            freezeFlag = false;
+            /*publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.unfreeze);
+            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);*/
+
             //Monitor.Pulse(broker);
         }
     }
