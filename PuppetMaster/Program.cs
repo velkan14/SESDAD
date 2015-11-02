@@ -354,8 +354,8 @@ namespace PuppetMaster
                         case 8:
                             //Wait \\d+
                             Console.WriteLine(words[1]);
-                            pm.log(input);
                             Thread.Sleep(Int32.Parse(words[1]));
+                            pm.log(input);
                             break;
                         default:
                             Console.WriteLine("Default case");
