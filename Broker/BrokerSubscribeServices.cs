@@ -7,32 +7,27 @@ using CommonTypes;
 
 namespace Broker
 {
-    public class BrokerSubscribeServices : MarshalByRefObject, BrokerSubscribeInterface
+    class BrokerSubscribeServices : MarshalByRefObject, BrokerSubscribeInterface
     {
-        string processName;
-        Dictionary<string, List<SubscriberInterface>> subscribersByTopic;
+        Broker broker;
 
-        public BrokerSubscribeServices(Dictionary<string, List<SubscriberInterface>> subscribersByTopic)
+        public BrokerSubscribeServices(Broker broker)
         {
-            this.subscribersByTopic = subscribersByTopic; 
+            this.broker = broker;
         }
+        public delegate void Subscribe(string topic, string subscriberURL);
+        public delegate void Unsubscribe(string topic);
 
         public void subscribe(string topic, string subscriberURL)
         {
-            SubscriberInterface newSubscriber =
-                (SubscriberInterface)Activator.GetObject(
-                       typeof(SubscriberInterface), subscriberURL);
-
-            if (subscribersByTopic.ContainsKey(topic))
-                subscribersByTopic[topic].Add(newSubscriber);
-            else
-                subscribersByTopic.Add(topic, new List<SubscriberInterface> { newSubscriber });
-
+            Subscribe sub = new Subscribe(broker.subscribe);
+            IAsyncResult RemAr = sub.BeginInvoke(topic, subscriberURL, null, null);
         }
 
         public void unsubscribe(string topic)
         {
-            throw new NotImplementedException();
+            Unsubscribe unsub = new Unsubscribe(broker.unsubscribe);
+            IAsyncResult RemAr = unsub.BeginInvoke(topic, null, null);
         }
 
     }

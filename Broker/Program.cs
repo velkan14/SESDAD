@@ -11,7 +11,7 @@ using CommonTypesPM;
 
 namespace Broker
 {
-    class Broker
+    class Program
     {
        
         static void Main(string[] args)
@@ -24,23 +24,21 @@ namespace Broker
             string remotingName = url.Split('/')[3];
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
 
-            List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
-            List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
-            Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
+            Broker broker = new Broker(routing, ordering);
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
 
-            PMBrokerImpl PMbroker = new PMBrokerImpl(dad, sons);
+            PMBrokerImpl PMbroker = new PMBrokerImpl(broker);
             RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));
 
-            BrokerSubscribeServices brkSubscribe = new BrokerSubscribeServices(subscribersByTopic);
+            BrokerSubscribeServices brkSubscribe = new BrokerSubscribeServices(broker);
             RemotingServices.Marshal(brkSubscribe, remotingName + "S", typeof(BrokerSubscribeServices));
 
-            BrokerToBrokerServices brk = new BrokerToBrokerServices(dad, sons, subscribersByTopic, routing);
-            RemotingServices.Marshal(brk, remotingName + "B", typeof(BrokerToBrokerServices));
+            BrokerToBrokerServices brkToBrk = new BrokerToBrokerServices(broker);
+            RemotingServices.Marshal(brkToBrk, remotingName + "B", typeof(BrokerToBrokerServices));
 
-            BrokerPublishServices brkPublish = new BrokerPublishServices(brk);
+            BrokerPublishServices brkPublish = new BrokerPublishServices(broker);
             RemotingServices.Marshal(brkPublish, remotingName +"P", typeof(BrokerPublishServices));
 
             Console.WriteLine("New broker listening at " + url);

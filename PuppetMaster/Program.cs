@@ -353,7 +353,7 @@ namespace PuppetMaster
                             break;
                         case 8:
                             //Wait \\d+
-                            Console.WriteLine(words[1]);
+                            //Console.WriteLine(words[1]);
                             Thread.Sleep(Int32.Parse(words[1]));
                             pm.log(input);
                             break;

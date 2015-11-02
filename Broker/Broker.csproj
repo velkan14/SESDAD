@@ -63,6 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Broker.cs" />
     <Compile Include="BrokerSubscribeServices.cs" />
     <Compile Include="BrokerToBrokerServices.cs" />
     <Compile Include="PMBrokerImpl.cs" />

@@ -19,15 +19,6 @@ namespace Publisher
         public delegate void publisherAsyncPublish(int number, string topic, int interval);
         public delegate void publisherAsyncDoSomething();
 
-        public static void OurRemoteAsyncCallBack(IAsyncResult ar)
-        {
-            // Alternative 2: Use the callback to get the return value
-            publisherAsyncPublish del = (publisherAsyncPublish)((AsyncResult)ar).AsyncDelegate;
-            del.EndInvoke(ar);
-
-            return;
-        }
-
         public PMPublisherImpl(BrokerPublishInterface broker, string processName)
         {
             pub = new Publisher(broker, processName);
@@ -36,8 +27,7 @@ namespace Publisher
         public void crash()
         {
             publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.crash);
-            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
-            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);
+            RemoteDel.BeginInvoke(null, null);
         }
 
         public void freeze()
@@ -51,19 +41,13 @@ namespace Publisher
         public void publish(int number, string topic, int interval)
         {
             publisherAsyncPublish RemoteDel = new publisherAsyncPublish(pub.publish);
-            // Create delegate to local callback
-            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
-            // Call remote method
-            IAsyncResult RemAr = RemoteDel.BeginInvoke(number, topic, interval, RemoteCallback, null);
-            asyncPublishList.Add(RemoteDel);
+            RemoteDel.BeginInvoke(number, topic, interval, null, null);
         }
 
         public void status()
         {
             publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.status);
-
-            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
-            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);
+            RemoteDel.BeginInvoke(null, null);
             
         }
 

@@ -12,26 +12,30 @@ namespace Broker
 
     class PMBrokerImpl : MarshalByRefObject, PMBroker
     {
-        List<BrokerToBrokerInterface> sons;
-        List<BrokerToBrokerInterface> dad;
-        public PMBrokerImpl(List<BrokerToBrokerInterface> dad, List<BrokerToBrokerInterface> sons) {
-            this.sons = sons;
-            this.dad = dad;
+        Broker broker;
 
+        public delegate void Add(string url);
+        public delegate void Something();
+
+        public PMBrokerImpl(Broker broker) {
+            this.broker = broker;
         }
         public void addDad(string url)
         {
-            dad.Add((BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B"));
+            Add delegated = new Add(broker.addDad);
+            IAsyncResult RemAr = delegated.BeginInvoke(url, null, null);
         }
 
         public void addSon(string url)
         {
-            sons.Add((BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B"));
+            Add delegated = new Add(broker.addSon);
+            IAsyncResult RemAr = delegated.BeginInvoke(url, null, null);
         }
 
         public void crash()
         {
-            System.Environment.Exit(1);
+            Something delegated = new Something(broker.crash);
+            IAsyncResult RemAr = delegated.BeginInvoke(null, null);
         }
 
         public void freeze()

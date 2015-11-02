@@ -28,8 +28,11 @@ namespace Publisher
 
         public void freeze()
         {
-            freezeFlag = true;
-            Monitor.Wait(this);
+            lock (this)
+            {
+                freezeFlag = true;
+            }
+            //Monitor.Wait(this);
         }
 
         public void publish(int number, string topic, int interval)
@@ -49,7 +52,11 @@ namespace Publisher
 
         public void unfreeze()
         {
-            freezeFlag = false;
+            lock (this)
+            {
+                freezeFlag = false;
+            }
+
             //Monitor.Pulse(broker);
         }
     }

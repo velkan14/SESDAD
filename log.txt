@@ -1,0 +1,40 @@
+
+Log Entry : 20:38:45 2 de novembro de 2015
+  :
+  :Subscriber sub0 Subscribe /topic/pub3/
+-------------------------------
+
+Log Entry : 20:38:45 2 de novembro de 2015
+  :
+  :Subscriber sub0 Subscribe /topic/pub2/
+-------------------------------
+
+Log Entry : 20:38:47 2 de novembro de 2015
+  :
+  :Subscriber sub1 Subscribe /topic/pub0/
+-------------------------------
+
+Log Entry : 20:38:47 2 de novembro de 2015
+  :
+  :Wait 5000
+-------------------------------
+
+Log Entry : 20:38:54 2 de novembro de 2015
+  :
+  :Publisher publisher3 Publish 5 Ontopic /topic/pub2/ Interval 10000
+-------------------------------
+
+Log Entry : 20:38:54 2 de novembro de 2015
+  :
+  :Wait 5000
+-------------------------------
+
+Log Entry : 20:39:00 2 de novembro de 2015
+  :
+  :Publisher publisher0 Publish 3 Ontopic /topic/pub0/ Interval 3000
+-------------------------------
+
+Log Entry : 20:39:00 2 de novembro de 2015
+  :
+  :Publisher publisher3 Publish 5 Ontopic /topic/pub3/ Interval 1000
+-------------------------------
