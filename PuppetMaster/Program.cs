@@ -181,7 +181,7 @@ namespace PuppetMaster
                 string[] scriptFile = System.IO.File.ReadAllLines(@"..\..\..\script.txt");
                 for (int fileLine = 0; fileLine < scriptFile.Length; fileLine++)
                 {
-                    readInput(scriptFile[fileLine], publisherDict, brokerDict, subscriberDict);
+                    readInput(pm, scriptFile[fileLine], publisherDict, brokerDict, subscriberDict);
                 }
             }
             catch(FileNotFoundException e) {
@@ -204,7 +204,7 @@ namespace PuppetMaster
             while (!input.Equals("Exit"))
             {
                 input = System.Console.ReadLine();
-                readInput(input, publisherDict, brokerDict, subscriberDict);
+                readInput(pm, input, publisherDict, brokerDict, subscriberDict);
             }
 
         }
@@ -220,7 +220,7 @@ namespace PuppetMaster
             return null;
         }
 
-        public static void readInput(string input, Dictionary<string, PMPublisher> publisherDict, Dictionary<string, PMBroker> brokerDict, Dictionary<string, PMSubscriber> subscriberDict)
+        public static void readInput(PM pm, string input, Dictionary<string, PMPublisher> publisherDict, Dictionary<string, PMBroker> brokerDict, Dictionary<string, PMSubscriber> subscriberDict)
         {
             String[] pattern = new String[MAX_COMMAND_NUM]{ "Subscriber \\w+ Subscribe [\\w/]+",
                                             "Subscriber \\w+ Unsubscribe [\\w/]+",
@@ -248,17 +248,20 @@ namespace PuppetMaster
                             PMSubscriber sub;
                             subscriberDict.TryGetValue(words[1], out sub);
                             sub.subscribe(words[3]);
+                            pm.log(input);
                             break;
                         case 2:
                             //Subscriber \\w+ Unsubscribe [\\w/]+
                             subscriberDict.TryGetValue(words[1], out sub);
                             sub.unsubscribe(words[3]);
+                            pm.log(input);
                             break;
                         case 3:
                             //Publisher \\w+ Publish \\d+ Ontopic [\\w/]+ Interval \\d+
                             PMPublisher pub;
                             publisherDict.TryGetValue(words[1], out pub);
                             pub.publish(Int32.Parse(words[3]), words[5], Int32.Parse(words[7]));
+                            pm.log(input);
                             break;
                         case 4:
                             //Status
@@ -275,6 +278,7 @@ namespace PuppetMaster
                             {
                                 tmp.Value.status();
                             }
+                            pm.log(input);
                             break;
                         case 5:
                             //Crash \\w+
@@ -295,6 +299,7 @@ namespace PuppetMaster
                                 brokerDict.TryGetValue(words[1], out brk);
                                 brk.crash();
                             }
+                            pm.log(input);
                             break;
                         case 6:
                             //Freeze \\w+
@@ -316,6 +321,7 @@ namespace PuppetMaster
                                 brokerDict.TryGetValue(words[1], out brk);
                                 brk.freeze();
                             }
+                            pm.log(input);
                             break;
                         case 7:
                             //Unfreeze \\w+
@@ -336,10 +342,12 @@ namespace PuppetMaster
                                 brokerDict.TryGetValue(words[1], out brk);
                                 brk.unfreeze();
                             }
+                            pm.log(input);
                             break;
                         case 8:
                             //Wait \\d+
                             Console.WriteLine(words[1]);
+                            pm.log(input);
                             break;
                         default:
                             Console.WriteLine("Default case");
