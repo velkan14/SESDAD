@@ -10,9 +10,16 @@ namespace Broker
 {
     class Broker :  BrokerToBrokerInterface, PMBroker, BrokerSubscribeInterface, BrokerPublishInterface
     {
+        string url;
+
         List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
+
+        Dictionary<string, List<BrokerToBrokerInterface>> brokersByTopic = new Dictionary<string, List<BrokerToBrokerInterface>>();
+
+        Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
+
         List<Event> events = new List<Event>();
         string routing, ordering;
 
@@ -21,6 +28,13 @@ namespace Broker
             this.routing = routing;
             this.ordering = ordering;
         }
+
+        public void setUrl(string url)
+        {
+            this.url = url;
+        }
+
+        public string getURL() { return url; }
 
         public void forwardEvent(Event evt)
         {
@@ -41,16 +55,27 @@ namespace Broker
                             son.forwardEvent(evt);
                         }
                         //var flattenList = subscribersByTopic.SelectMany(x => x.Value);
-                        List<SubscriberInterface> flattenList;
-                        if (subscribersByTopic.TryGetValue(evt.Topic, out flattenList))
-                            foreach (SubscriberInterface sub in flattenList)
-                            {
-                                sub.deliverToSub(evt);
-                            }
+                        
                     }
-                    else
+                    else if (routing.Equals("filter"))
                     {
-                        //TODO
+                        List<BrokerToBrokerInterface> flattenBrokerList;
+                        if (brokersByTopic.TryGetValue(evt.Topic, out flattenBrokerList))
+                        {
+                            foreach (BrokerToBrokerInterface broker in flattenBrokerList)
+                            {
+                                broker.forwardEvent(evt);
+                            }
+                        }
+                    }
+
+                    List<SubscriberInterface> flattenList;
+                    if (subscribersByTopic.TryGetValue(evt.Topic, out flattenList))
+                    {
+                        foreach (SubscriberInterface sub in flattenList)
+                        {
+                            sub.deliverToSub(evt);
+                        }
                     }
                 }
             }
@@ -60,7 +85,9 @@ namespace Broker
         {
             lock (this)
             {
-                dad.Add((BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B"));
+                BrokerToBrokerInterface brokerDad = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
+                dad.Add(brokerDad);
+                if (routing.Equals("filter")) topicsProvidedByBroker.Add(brokerDad, null);
             }
         }
 
@@ -68,7 +95,9 @@ namespace Broker
         {
             lock (this)
             {
-                sons.Add((BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B"));
+                BrokerToBrokerInterface brokerSon = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
+                sons.Add(brokerSon);
+                if (routing.Equals("filter")) topicsProvidedByBroker.Add(brokerSon, null);
             }
         }
 
@@ -105,6 +134,22 @@ namespace Broker
                 else
                     subscribersByTopic.Add(topic, new List<SubscriberInterface> { newSubscriber });
             }
+            Console.WriteLine("Subscriber: " + subscriberURL + " topic: " + topic);
+            
+            if (routing.Equals("filter"))
+            {
+                foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+                {
+                    if (!entry.Value.Contains(topic))
+                    {
+                        entry.Key.forwardInterest(this.url, topic);
+                        Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
+                        entry.Value.Add(topic);
+                    }
+                    
+                }
+            }
+
         }
 
         public void unsubscribe(string topic)
@@ -116,5 +161,57 @@ namespace Broker
         {
             forwardEvent(newEvent);
         }
+
+        public void forwardInterest(string url, string topic)
+        {
+            Console.WriteLine("Received forwardInterest(" + url + ", " + topic + ")");
+            BrokerToBrokerInterface interestedBroker = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
+
+            List<BrokerToBrokerInterface> brokers;
+            brokersByTopic.TryGetValue(topic, out brokers);
+
+            if (brokersByTopic.ContainsKey(topic))
+            {
+                Console.WriteLine("brokersByTopic.ContainsKey(" + topic + ")");
+                if (!brokers.Contains(interestedBroker))
+                {
+                    brokersByTopic[topic].Add(interestedBroker);
+
+                    foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+                    {
+                        if (!entry.Key.Equals(interestedBroker))
+                        {
+                            if (!entry.Value.Contains(topic))
+                            {
+                                entry.Key.forwardInterest(this.url, topic);
+                                Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
+                                entry.Value.Add(topic);
+                            }
+                        }
+                    }
+                }
+
+            } else
+            {
+                Console.WriteLine("!brokersByTopic.ContainsKey(" + topic + ")");
+                brokersByTopic.Add(topic, new List<BrokerToBrokerInterface> { interestedBroker });
+                foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+                {
+                    if (!entry.Key.Equals(interestedBroker))
+                    {
+                        if (!entry.Value.Contains(topic))
+                        {
+                            entry.Key.forwardInterest(this.url, topic);
+                            Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
+                            entry.Value.Add(topic);
+                        }
+                    }
+                }
+
+            }
+            
+        }
+
+
     }
 }

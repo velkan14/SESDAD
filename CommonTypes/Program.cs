@@ -17,6 +17,8 @@ namespace CommonTypes
 
     public interface BrokerToBrokerInterface {
         void forwardEvent(Event evt);
+        void forwardInterest(string url, string topic);
+        string getURL();
     }
 
     public interface BrokerSubscribeInterface {

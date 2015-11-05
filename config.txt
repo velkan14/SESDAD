@@ -1,15 +1,15 @@
-Site site0 Parent none
-Site site1 Parent site0
-Site site2 Parent site0
-Site site3 Parent site1
-
-Process broker0 Is broker On site0 URL tcp://localhost:3333/broker
-Process broker1 Is broker On site1 URL tcp://localhost:3334/broker
+RoutingPolicy filter
+Site site4 Parent none
+Site site2 Parent site4
+Site site3 Parent site4
+Site site0 Parent site2
+Site site1 Parent site2
+Process broker4 Is broker On site4 URL tcp://localhost:3333/broker
+Process broker3 Is broker On site3 URL tcp://localhost:3334/broker
 Process broker2 Is broker On site2 URL tcp://localhost:3335/broker
-Process broker3 Is broker On site3 URL tcp://localhost:3336/broker
-Process publisher0 Is publisher On site0 URL tcp://localhost:3337/pub
-rocess publisher1 Is publisher On site0 URL tcp://localhost:3338/pub
-rocess publisher2 Is publisher On site0 URL tcp://localhost:3339/pub
-Process publisher3 Is publisher On site3 URL tcp://localhost:3340/pub
-Process sub0 Is subscriber On site0 URL tcp://localhost:3341/sub
-Process sub1 Is subscriber On site3 URL tcp://localhost:3342/sub
+Process broker1 Is broker On site1 URL tcp://localhost:3336/broker
+Process broker0 Is broker On site0 URL tcp://localhost:3337/broker
+Process publisher3 Is publisher On site3 URL tcp://localhost:3338/pub
+Process publisher1 Is publisher On site1 URL tcp://localhost:3339/pub
+Process sub0 Is subscriber On site0 URL tcp://localhost:3340/sub
+Process sub1 Is subscriber On site0 URL tcp://localhost:3341/sub

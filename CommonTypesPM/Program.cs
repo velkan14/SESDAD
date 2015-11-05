@@ -54,6 +54,7 @@ namespace CommonTypesPM
     {
         void addSon(string url);
         void addDad(string url);
+        //void setUrl(string url);
 
         void status();
         void crash();

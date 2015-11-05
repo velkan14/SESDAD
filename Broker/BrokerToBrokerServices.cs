@@ -23,10 +23,19 @@ namespace Broker
             return;
         }
 
+        public string getURL() { return broker.getURL(); }
+
         public void forwardEvent(Event evt) {
             forwardEventAsync forwardDelegate = new forwardEventAsync(broker.forwardEvent);
             AsyncCallback RemoteCallback = new AsyncCallback(BrokerToBrokerServices.OurRemoteAsyncCallBack);
             IAsyncResult RemAr = forwardDelegate.BeginInvoke(evt, RemoteCallback, null);
+        }
+
+        public delegate void forwardInterestAsync(string url, string topic);
+        public void forwardInterest(string url, string topic)
+        {
+            forwardInterestAsync forwardDelegate = new forwardInterestAsync(broker.forwardInterest);
+            IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, topic, null, null);
         }
     }
 }

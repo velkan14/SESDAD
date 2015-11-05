@@ -25,6 +25,7 @@ namespace Broker
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
 
             Broker broker = new Broker(routing, ordering);
+            broker.setUrl(url);
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
