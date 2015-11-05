@@ -28,8 +28,10 @@ namespace CommonTypes
     public class Event {
         private string topic;
         private string content;
+        private string publisherName;
 
-        public Event(string topic, string content) {
+        public Event(string publisherName, string topic, string content) {
+            this.publisherName = publisherName;
             this.topic = topic;
             this.content = content;
         }
@@ -37,6 +39,12 @@ namespace CommonTypes
         public string Topic {
             get { return topic; }
             set { topic = value; }
+        }
+
+        public string PublisherName
+        {
+            get { return publisherName; }
+            set { publisherName = value; }
         }
 
         public string Content {

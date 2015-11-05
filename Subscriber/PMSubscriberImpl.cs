@@ -10,13 +10,14 @@ namespace Subscriber
 {
     class PMSubscriberImpl : MarshalByRefObject, PMSubscriber
     {
-        BrokerSubscribeInterface broker;
-        string myUrl;
+        Subscriber sub;
 
-        public PMSubscriberImpl(BrokerSubscribeInterface broker, string url)
+        public delegate void SubscriberAsyncString(string topic);
+        public delegate void SubscriberAsyncDoSomething();
+
+        public PMSubscriberImpl(Subscriber sub)
         {
-            this.broker = broker;
-            this.myUrl = url;
+            this.sub = sub;
         }
         public void crash()
         {
@@ -35,7 +36,8 @@ namespace Subscriber
 
         public void subscribe(string topic)
         {
-            broker.subscribe(topic, myUrl);
+            SubscriberAsyncString s = new SubscriberAsyncString(sub.subscribe);
+            s.BeginInvoke(topic, null, null);
         }
 
         public void unfreeze()
@@ -45,7 +47,8 @@ namespace Subscriber
 
         public void unsubscribe(string topic)
         {
-            broker.unsubscribe(topic);
+            SubscriberAsyncString s = new SubscriberAsyncString(sub.unsubscribe);
+            s.BeginInvoke(topic, null, null);
         }
     }
 }

@@ -109,7 +109,7 @@ namespace PuppetMaster
                                     brokerURL = findSiteByName(sites, site).BrokerOnSiteURL;
                                     obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                         "tcp://" + ipPM + ":8086/PMInterface");
-                                    obj.createSubscriber(processName, URL, brokerURL);
+                                    obj.createSubscriber(processName, URL, brokerURL, "tcp://" + ipPM + ":8086/PMNotifier");
                                     subscriberDict.Add(processName, (PMSubscriber)Activator.GetObject(typeof(PMSubscriber),
                                         URL + "PM"));
                                     break;

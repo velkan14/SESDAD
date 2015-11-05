@@ -30,7 +30,7 @@ namespace Publisher
 
             BrokerPublishInterface broker = (BrokerPublishInterface)Activator.GetObject(typeof(BrokerPublishInterface), urlBroker + "P");
             Console.WriteLine(pmURL);
-            NotificationReceiver pm = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), "tcp://localhost:8086/PMNotifier");
+            NotificationReceiver pm = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), pmURL);
 
             Publisher pub = new Publisher(broker, pm, processName);
 

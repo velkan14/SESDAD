@@ -47,9 +47,9 @@ namespace Publisher
             {
                 for (int i = 0; i < number; i++)
                 {
-                    Event e = new Event(topic, String.Concat(processName + " :", eventContent));
+                    Event e = new Event(processName, topic, eventContent.ToString());
                     broker.publishEvent(e);
-                    string notification = String.Concat("PubEvent" + processName + ", " + processName + ", " + topic + ", ", eventContent);
+                    string notification = String.Concat("PubEvent " + processName + ", " + processName + ", " + topic + ", ", eventContent);
                     Console.WriteLine(notification);
                     n.BeginInvoke(notification, null, null);
                     //pm.notify(notification);

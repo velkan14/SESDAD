@@ -35,9 +35,9 @@ namespace PuppetMaster
             }
         }
 
-        public void createSubscriber(string processName, string url, string urlBroker)
+        public void createSubscriber(string processName, string url, string urlBroker, string pmURL)
         {
-            Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url + " " + urlBroker);
+            Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url + " " + urlBroker + " " + pmURL);
         }
         public void createBroker(string processName, string url, string routing, string ordering)
         {

@@ -9,9 +9,18 @@ namespace Subscriber
 {
     class SubscriberImpl : MarshalByRefObject, SubscriberInterface
     {
+        private Subscriber sub;
+
+        public delegate void DeliverEvent(Event evt);
+
+        public SubscriberImpl(Subscriber sub)
+        {
+            this.sub = sub;
+        }
         public void deliverToSub(Event evt)
         {
-            Console.WriteLine(evt.Topic + ": " + evt.Content);
+            DeliverEvent de = new DeliverEvent(sub.deliverToSub);
+            de.BeginInvoke(evt, null, null);
         }
     }
 }

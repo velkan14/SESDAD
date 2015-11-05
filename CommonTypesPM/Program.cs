@@ -8,7 +8,7 @@ namespace CommonTypesPM
 {
     public interface PMInterface
     {
-        void createSubscriber(string processName, string url, string brokerURL);
+        void createSubscriber(string processName, string url, string brokerURL, string pmURL);
         void createBroker(string processName, string url, string routing, string ordering);
         void createPublisher(string processName, string url, string brokerURL, string pmURL);
         void status();
