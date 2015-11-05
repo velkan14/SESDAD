@@ -1,4 +1,5 @@
 ﻿using CommonTypes;
+using CommonTypesPM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,15 @@ namespace Publisher
         private bool freezeFlag = false;
         private string processName;
         private int eventContent = 0;
+        private NotificationReceiver pm;
 
-        public Publisher(BrokerPublishInterface broker, string processName)
+        public delegate void Notifier(string s);
+
+        public Publisher(BrokerPublishInterface broker, NotificationReceiver pm, string processName)
         {
             this.broker = broker;
             this.processName = processName;
+            this.pm = pm;
         }
 
         public void crash()
@@ -37,11 +42,20 @@ namespace Publisher
 
         public void publish(int number, string topic, int interval)
         {
-            for (int i = 0; i < number; i++)
+            Notifier n = new Notifier(pm.notify);
+            lock (this)
             {
-                Event e = new Event(topic, String.Concat(processName + " :", eventContent++));
-                broker.publishEvent(e);
-                Thread.Sleep(interval);
+                for (int i = 0; i < number; i++)
+                {
+                    Event e = new Event(topic, String.Concat(processName + " :", eventContent));
+                    broker.publishEvent(e);
+                    string notification = String.Concat("PubEvent" + processName + ", " + processName + ", " + topic + ", ", eventContent);
+                    Console.WriteLine(notification);
+                    n.BeginInvoke(notification, null, null);
+                    //pm.notify(notification);
+                    eventContent++;
+                    Thread.Sleep(interval);
+                }
             }
         }
 

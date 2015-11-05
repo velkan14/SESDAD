@@ -19,9 +19,9 @@ namespace Publisher
         public delegate void publisherAsyncPublish(int number, string topic, int interval);
         public delegate void publisherAsyncDoSomething();
 
-        public PMPublisherImpl(BrokerPublishInterface broker, string processName)
+        public PMPublisherImpl(Publisher pub)
         {
-            pub = new Publisher(broker, processName);
+            this.pub = pub;
         }
 
         public void crash()

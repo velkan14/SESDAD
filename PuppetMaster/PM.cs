@@ -9,7 +9,7 @@ using System.IO;
 
 namespace PuppetMaster
 {
-    class PM : MarshalByRefObject, PMInterface, NotificationReceiver
+    class PM : MarshalByRefObject, PMInterface
     {
 
         private string loggingLevel;
@@ -26,14 +26,12 @@ namespace PuppetMaster
 
         public void log(string logMessage)
         {
-            using (StreamWriter w = File.AppendText(@"..\..\..\log.txt"))
+            lock (this)
             {
-                w.Write("\r\nLog Entry : ");
-                w.WriteLine("{0} {1}", DateTime.Now.ToLongTimeString(),
-                        DateTime.Now.ToLongDateString());
-                w.WriteLine("  :");
-                w.WriteLine("  :{0}", logMessage);
-                w.WriteLine("-------------------------------");
+                using (StreamWriter w = File.AppendText(@"..\..\..\log.txt"))
+                {
+                    w.WriteLine("{0} {1} : {2}", DateTime.Now.ToLongTimeString(), DateTime.Now.ToLongDateString(), logMessage);
+                }
             }
         }
 
@@ -45,27 +43,14 @@ namespace PuppetMaster
         {
             Process.Start(@"..\..\..\Broker\bin\Debug\broker.exe", processName + " " + url +" "+ routing +" "+ ordering);
         }
-        public void createPublisher(string processName, string url, string urlBroker)
+        public void createPublisher(string processName, string url, string urlBroker, string urlPM)
         {
-            Process.Start(@"..\..\..\Publisher\bin\Debug\publisher.exe", processName + " " + url + " " + urlBroker);
+            Process.Start(@"..\..\..\Publisher\bin\Debug\publisher.exe", processName + " " + url + " " + urlBroker + " " + urlPM);
         }
 
         
         public void status() { }
 
-        public void publishNotification()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void forwardNotification()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void receiveNotification()
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

@@ -34,6 +34,8 @@ namespace PuppetMaster
             PM pm = new PM();
             RemotingServices.Marshal(pm, "PMInterface",typeof(PMInterface));
 
+            NotificationReceiverImpl notifier = new NotificationReceiverImpl(pm);
+            RemotingServices.Marshal(notifier, "PMNotifier", typeof(NotificationReceiver));
             /**
             * Site sitename Parent sitename|none
             * Process processname Is publisher |subscriber |broker On sitename URL process-url
@@ -93,7 +95,7 @@ namespace PuppetMaster
 
                                     PMInterface obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                         "tcp://" + ipPM + ":8086/PMInterface");
-                                    obj.createPublisher(processName, URL, brokerURL);
+                                    obj.createPublisher(processName, URL, brokerURL, "tcp://" + ipPM + ":8086/PMNotifier");
 
                                     publisherDict.Add(processName, (PMPublisher)Activator.GetObject(typeof(PMPublisher),
                                         URL + "PM"));

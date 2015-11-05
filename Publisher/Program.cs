@@ -21,17 +21,22 @@ namespace Publisher
             string processName = args[0];
             string myURL = args[1];
             string urlBroker = args[2];
+            string pmURL = args[3];
             string port = myURL.Split(':')[2].Split('/')[0];
             string remotingName = myURL.Split('/')[3];
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
+
             BrokerPublishInterface broker = (BrokerPublishInterface)Activator.GetObject(typeof(BrokerPublishInterface), urlBroker + "P");
-            PMPublisherImpl publisher = new PMPublisherImpl(broker, processName);
+            Console.WriteLine(pmURL);
+            NotificationReceiver pm = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), "tcp://localhost:8086/PMNotifier");
+
+            Publisher pub = new Publisher(broker, pm, processName);
+
+            PMPublisherImpl publisher = new PMPublisherImpl(pub);
             RemotingServices.Marshal(publisher, remotingName + "PM", typeof(PMPublisher));
-            //Console.ReadLine();
-            //publisher.freeze();
-            //publisher.publish(5, "Toy", 2000);
+            
             Console.WriteLine(processName + " started on " + myURL);
             Console.ReadLine();
         }
