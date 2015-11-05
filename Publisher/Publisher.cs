@@ -16,7 +16,7 @@ namespace Publisher
         private string processName;
         private int eventContent = 0;
         private NotificationReceiver pm;
-
+        private int numberFreezes = 0;
         public delegate void Notifier(string s);
 
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
@@ -47,7 +47,11 @@ namespace Publisher
             
             for (int i = 0; i < number; i++)
             {
-                if (freezeFlag) freezeEvent.WaitOne();
+                if (freezeFlag)
+                {
+                    numberFreezes++;
+                    freezeEvent.WaitOne();
+                }
                 lock (this)
                 {
                     Event e = new Event(processName, topic, eventContent.ToString());
@@ -65,14 +69,16 @@ namespace Publisher
         {
             throw new NotImplementedException();
         }
-
+        
         public void unfreeze()
         {
             lock (this)
             {
                 freezeFlag = false;
             }
-            freezeEvent.Set();
+            for (int i = 0; i < numberFreezes; i++)
+                freezeEvent.Set();
+            numberFreezes = 0;
         }
     }
 }

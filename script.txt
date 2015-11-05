@@ -6,7 +6,5 @@ Freeze publisher3
 Wait 5000
 Publisher publisher3 Publish 3 Ontopic B Interval 2000
 Publisher publisher1 Publish 3 Ontopic A Interval 2000
-Wait 10000
 Subscriber sub1 Subscribe A
-Wait 10000
 Publisher publisher3 Publish 3 Ontopic A Interval 2000

@@ -21,12 +21,14 @@ namespace Subscriber
         }
         public void crash()
         {
-            throw new NotImplementedException();
+            SubscriberAsyncDoSomething RemoteDel = new SubscriberAsyncDoSomething(sub.crash);
+            RemoteDel.BeginInvoke(null, null);
         }
 
         public void freeze()
         {
-            throw new NotImplementedException();
+            SubscriberAsyncDoSomething RemoteDel = new SubscriberAsyncDoSomething(sub.freeze);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
         }
 
         public void status()
@@ -42,7 +44,8 @@ namespace Subscriber
 
         public void unfreeze()
         {
-            throw new NotImplementedException();
+
+            sub.unfreeze();
         }
 
         public void unsubscribe(string topic)

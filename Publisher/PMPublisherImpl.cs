@@ -14,8 +14,6 @@ namespace Publisher
     {
 
         Publisher pub;
-        List<publisherAsyncPublish> asyncPublishList = new List<publisherAsyncPublish>();
-        List<publisherAsyncDoSomething> asyncSomethingList = new List<publisherAsyncDoSomething>();
         public delegate void publisherAsyncPublish(int number, string topic, int interval);
         public delegate void publisherAsyncDoSomething();
 
@@ -55,8 +53,7 @@ namespace Publisher
             /*publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.unfreeze);
             AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
             IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);*/
-            Console.WriteLine("Unfreeze");
-            //Monitor.Pulse(pub);
+            
             pub.unfreeze();
         }
     }
