@@ -19,6 +19,8 @@ namespace Publisher
 
         public delegate void Notifier(string s);
 
+        AutoResetEvent freezeEvent = new AutoResetEvent(false);
+
         public Publisher(BrokerPublishInterface broker, NotificationReceiver pm, string processName)
         {
             this.broker = broker;
@@ -37,22 +39,22 @@ namespace Publisher
             {
                 freezeFlag = true;
             }
-            //Monitor.Wait(this);
         }
 
         public void publish(int number, string topic, int interval)
         {
             Notifier n = new Notifier(pm.notify);
-            lock (this)
+            
+            for (int i = 0; i < number; i++)
             {
-                for (int i = 0; i < number; i++)
+                if (freezeFlag) freezeEvent.WaitOne();
+                lock (this)
                 {
                     Event e = new Event(processName, topic, eventContent.ToString());
                     broker.publishEvent(e);
                     string notification = String.Concat("PubEvent " + processName + ", " + processName + ", " + topic + ", ", eventContent);
                     Console.WriteLine(notification);
                     n.BeginInvoke(notification, null, null);
-                    //pm.notify(notification);
                     eventContent++;
                     Thread.Sleep(interval);
                 }
@@ -70,8 +72,7 @@ namespace Publisher
             {
                 freezeFlag = false;
             }
-
-            //Monitor.Pulse(broker);
+            freezeEvent.Set();
         }
     }
 }

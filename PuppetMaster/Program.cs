@@ -20,6 +20,10 @@ namespace PuppetMaster
         private const int MAX_CONFIG_NUM = 11;
         private const int MAX_COMMAND_NUM = 8;
 
+        public delegate void AsyncVoid();
+        public delegate void AsyncString(string s);
+        public delegate void AsyncIntStringInt(int i1, string s2, int i3);
+
         static void Main(string[] args)
         {
             string routingPolicy = "flooding";
@@ -29,6 +33,9 @@ namespace PuppetMaster
             Dictionary<string, PMPublisher> publisherDict = new Dictionary<string, PMPublisher>();
             Dictionary<string, PMSubscriber> subscriberDict = new Dictionary<string, PMSubscriber>();
             Dictionary<string, PMBroker> brokerDict = new Dictionary<string, PMBroker>();
+
+            
+
             TcpChannel channel = new TcpChannel(PUPPETMASTER_IP);
             ChannelServices.RegisterChannel(channel, false);
             PM pm = new PM();
@@ -253,37 +260,51 @@ namespace PuppetMaster
                             //Subscriber \\w+ Subscribe [\\w/]+
                             PMSubscriber sub;
                             subscriberDict.TryGetValue(words[1], out sub);
-                            sub.subscribe(words[3]);
+                            AsyncString a = new AsyncString(sub.subscribe);
+                            a.BeginInvoke(words[3], null, null);
+                            //sub.subscribe(words[3]);
                             pm.log(input);
                             break;
                         case 2:
                             //Subscriber \\w+ Unsubscribe [\\w/]+
                             subscriberDict.TryGetValue(words[1], out sub);
-                            sub.unsubscribe(words[3]);
+                            a = new AsyncString(sub.unsubscribe);
+                            a.BeginInvoke(words[3], null, null);
+                            //sub.unsubscribe(words[3]);
                             pm.log(input);
                             break;
                         case 3:
                             //Publisher \\w+ Publish \\d+ Ontopic [\\w/]+ Interval \\d+
                             PMPublisher pub;
                             publisherDict.TryGetValue(words[1], out pub);
-                            pub.publish(Int32.Parse(words[3]), words[5], Int32.Parse(words[7]));
+                            AsyncIntStringInt b = new AsyncIntStringInt(pub.publish);
+                            b.BeginInvoke(Int32.Parse(words[3]), words[5], Int32.Parse(words[7]), null, null);
+                            //pub.publish(Int32.Parse(words[3]), words[5], Int32.Parse(words[7]));
                             pm.log(input);
                             break;
                         case 4:
                             //Status
                             Console.WriteLine(words[0]);
+                            
                             foreach (KeyValuePair<string, PMPublisher> tmp in publisherDict)
                             {
-                                tmp.Value.status();
+                                AsyncVoid c = new AsyncVoid(tmp.Value.status);
+                                c.BeginInvoke(null, null);
+                                //tmp.Value.status();
                             }
                             foreach (KeyValuePair<string, PMSubscriber> tmp in subscriberDict)
                             {
-                                tmp.Value.status();
+                                AsyncVoid c = new AsyncVoid(tmp.Value.status);
+                                c.BeginInvoke(null, null);
+                                //tmp.Value.status();
                             }
                             foreach (KeyValuePair<string, PMBroker> tmp in brokerDict)
                             {
-                                tmp.Value.status();
+                                AsyncVoid c = new AsyncVoid(tmp.Value.status);
+                                c.BeginInvoke(null, null);
+                                //tmp.Value.status();
                             }
+                            
                             pm.log(input);
                             break;
                         case 5:
@@ -291,22 +312,34 @@ namespace PuppetMaster
                             string processName = words[1];
                             if (publisherDict.ContainsKey(processName))
                             {
-                                publisherDict.TryGetValue(words[1], out pub);
-                                pub.crash();
-                                publisherDict.Remove(words[1]);
+                                if (publisherDict.TryGetValue(words[1], out pub))
+                                {
+                                    //pub.crash();
+                                    AsyncVoid c = new AsyncVoid(pub.crash);
+                                    c.BeginInvoke(null, null);
+                                    publisherDict.Remove(words[1]);
+                                }
                             }
                             else if (subscriberDict.ContainsKey(processName))
                             {
-                                subscriberDict.TryGetValue(words[1], out sub);
-                                sub.crash();
-                                subscriberDict.Remove(words[1]);
+                                if (subscriberDict.TryGetValue(words[1], out sub))
+                                {
+                                    //sub.crash();
+                                    AsyncVoid c = new AsyncVoid(sub.crash);
+                                    c.BeginInvoke(null, null);
+                                    subscriberDict.Remove(words[1]);
+                                }
                             }
                             else if (brokerDict.ContainsKey(processName))
                             {
                                 PMBroker brk;
-                                brokerDict.TryGetValue(words[1], out brk);
-                                brk.crash();
-                                brokerDict.Remove(words[1]);
+                                if (brokerDict.TryGetValue(words[1], out brk))
+                                {
+                                    //brk.crash();
+                                    AsyncVoid c = new AsyncVoid(brk.crash);
+                                    c.BeginInvoke(null, null);
+                                    brokerDict.Remove(words[1]);
+                                }
                             }
                             pm.log(input);
                             break;
@@ -315,20 +348,32 @@ namespace PuppetMaster
                             processName = words[1];
                             if (publisherDict.ContainsKey(processName))
                             {
-                                publisherDict.TryGetValue(words[1], out pub);
-                                pub.freeze();
+                                if (publisherDict.TryGetValue(words[1], out pub))
+                                {
+                                    //pub.freeze();
+                                    AsyncVoid c = new AsyncVoid(pub.freeze);
+                                    c.BeginInvoke(null, null);
+                                }
                             }
                             else if (subscriberDict.ContainsKey(processName))
                             {
 
-                                subscriberDict.TryGetValue(words[1], out sub);
-                                sub.freeze();
+                                if (subscriberDict.TryGetValue(words[1], out sub))
+                                {
+                                    //sub.freeze();
+                                    AsyncVoid c = new AsyncVoid(sub.freeze);
+                                    c.BeginInvoke(null, null);
+                                }
                             }
                             else if (brokerDict.ContainsKey(processName))
                             {
                                 PMBroker brk;
-                                brokerDict.TryGetValue(words[1], out brk);
-                                brk.freeze();
+                                if (brokerDict.TryGetValue(words[1], out brk))
+                                {
+                                    //brk.freeze();
+                                    AsyncVoid c = new AsyncVoid(brk.freeze);
+                                    c.BeginInvoke(null, null);
+                                }
                             }
                             pm.log(input);
                             break;
@@ -337,19 +382,32 @@ namespace PuppetMaster
                             processName = words[1];
                             if (publisherDict.ContainsKey(processName))
                             {
-                                publisherDict.TryGetValue(words[1], out pub);
-                                pub.unfreeze();
+                                if (publisherDict.TryGetValue(words[1], out pub))
+                                {
+                                    //pub.freeze();
+                                    AsyncVoid c = new AsyncVoid(pub.unfreeze);
+                                    c.BeginInvoke(null, null);
+                                }
                             }
                             else if (subscriberDict.ContainsKey(processName))
                             {
-                                subscriberDict.TryGetValue(words[1], out sub);
-                                sub.unfreeze();
+
+                                if (subscriberDict.TryGetValue(words[1], out sub))
+                                {
+                                    //sub.freeze();
+                                    AsyncVoid c = new AsyncVoid(sub.unfreeze);
+                                    c.BeginInvoke(null, null);
+                                }
                             }
                             else if (brokerDict.ContainsKey(processName))
                             {
                                 PMBroker brk;
-                                brokerDict.TryGetValue(words[1], out brk);
-                                brk.unfreeze();
+                                if (brokerDict.TryGetValue(words[1], out brk))
+                                {
+                                    //brk.freeze();
+                                    AsyncVoid c = new AsyncVoid(brk.unfreeze);
+                                    c.BeginInvoke(null, null);
+                                }
                             }
                             pm.log(input);
                             break;

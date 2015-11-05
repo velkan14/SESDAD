@@ -32,9 +32,8 @@ namespace Publisher
 
         public void freeze()
         {
-            /*publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.freeze);
-            AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
-            IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);*/
+            publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.freeze);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
             //Monitor.Wait(broker);
         }
 
@@ -56,8 +55,9 @@ namespace Publisher
             /*publisherAsyncDoSomething RemoteDel = new publisherAsyncDoSomething(pub.unfreeze);
             AsyncCallback RemoteCallback = new AsyncCallback(PMPublisherImpl.OurRemoteAsyncCallBack);
             IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);*/
-
-            //Monitor.Pulse(broker);
+            Console.WriteLine("Unfreeze");
+            //Monitor.Pulse(pub);
+            pub.unfreeze();
         }
     }
 }
