@@ -53,6 +53,7 @@ namespace Subscriber
         public void subscribe(string topic)
         {
             broker.subscribe(topic, myUrl);
+            Console.WriteLine("Subscribed topic " + topic);
         }
 
         public void unfreeze()

@@ -125,8 +125,7 @@ namespace Broker
         {
             lock (this)
             {
-                SubscriberInterface newSubscriber =
-                    (SubscriberInterface)Activator.GetObject(
+                SubscriberInterface newSubscriber = (SubscriberInterface)Activator.GetObject(
                            typeof(SubscriberInterface), subscriberURL);
 
                 if (subscribersByTopic.ContainsKey(topic))
@@ -138,11 +137,12 @@ namespace Broker
 
                 if (routing.Equals("filter"))
                 {
-                    Console.WriteLine("filter :P");
                     foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
                     {
+                        Console.WriteLine("foreach topicsProvidedByBroker");
                         if (!entry.Value.Contains(topic))
                         {
+                            Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
                             entry.Key.forwardInterest(this.url, topic);
                             Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
                             entry.Value.Add(topic);
@@ -175,23 +175,32 @@ namespace Broker
             if (brokersByTopic.ContainsKey(topic))
             {
                 Console.WriteLine("brokersByTopic.ContainsKey(" + topic + ")");
-                if (!brokers.Contains(interestedBroker))
+                foreach (BrokerToBrokerInterface broker in brokers)
                 {
-                    brokersByTopic[topic].Add(interestedBroker);
-
-                    foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+                    Console.WriteLine("foreach broker brokersByTopic");
+                    if (!broker.getURL().Equals(url))
                     {
-                        if (!entry.Key.Equals(interestedBroker))
+                        Console.WriteLine("!broker.getURL().Equals(" + url + ")");
+                        brokersByTopic[topic].Add(interestedBroker);
+
+                        foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
                         {
-                            if (!entry.Value.Contains(topic))
+                            Console.WriteLine("foreach topicsProvidedByBroker");
+                            if (!entry.Key.getURL().Equals(url))
                             {
-                                entry.Key.forwardInterest(this.url, topic);
-                                Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
-                                entry.Value.Add(topic);
+                                Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
+                                if (!entry.Value.Contains(topic))
+                                {
+                                    Console.WriteLine("!entry.Value.Contains(" + topic + ")");
+                                    entry.Key.forwardInterest(this.url, topic);
+                                    Console.WriteLine("Forwarded interest to " + entry.Key.getURL() + " on topic " + topic);
+                                    entry.Value.Add(topic);
+                                }
                             }
                         }
                     }
                 }
+                Console.WriteLine();
 
             } else
             {
@@ -199,18 +208,21 @@ namespace Broker
                 brokersByTopic.Add(topic, new List<BrokerToBrokerInterface> { interestedBroker });
                 foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
                 {
+                    Console.WriteLine("foreach topicsProvidedByBroker");
                     if (!entry.Key.getURL().Equals(url))
                     {
+                        Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
                         if (!entry.Value.Contains(topic))
                         {
+                            Console.WriteLine("!entry.Value.Contains(" + topic + ")");
                             entry.Key.forwardInterest(this.url, topic);
-                            Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
+                            Console.WriteLine("Forwarded interest to " + entry.Key.getURL() + " on topic " + topic);
                             entry.Value.Add(topic);
                         }
                     }
                 
                 }
-
+                Console.WriteLine();
             }
             
         }

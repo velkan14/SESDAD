@@ -56,12 +56,19 @@ namespace CommonTypes
 
         public static bool operator ==(Event a, Event b)
         {
-            return a.content.Equals(b.Content) && a.Topic.Equals(b.Topic);
+            return a.content.Equals(b.Content) && a.Topic.Equals(b.Topic) && a.PublisherName.Equals(b.publisherName);
         }
 
         public static bool operator !=(Event a, Event b)
         {
-            return a.content.Equals(b.Content) && a.Topic.Equals(b.Topic); ;
+            return !(a.content.Equals(b.Content) && a.Topic.Equals(b.Topic) && a.PublisherName.Equals(b.publisherName));
+        }
+
+        public override bool Equals(object obj)
+        {
+            Event e = obj as Event;
+
+            return e.content.Equals(this.Content) && e.Topic.Equals(this.Topic) && e.PublisherName.Equals(this.publisherName);
         }
 
     }
