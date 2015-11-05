@@ -16,7 +16,7 @@ namespace Broker
             this.broker = broker;
         }
         public delegate void Subscribe(string topic, string subscriberURL);
-        public delegate void Unsubscribe(string topic);
+        public delegate void Unsubscribe(string topic, string subscriberURL);
 
         public void subscribe(string topic, string subscriberURL)
         {
@@ -24,10 +24,10 @@ namespace Broker
             IAsyncResult RemAr = sub.BeginInvoke(topic, subscriberURL, null, null);
         }
 
-        public void unsubscribe(string topic)
+        public void unsubscribe(string topic, string subscriberURL)
         {
             Unsubscribe unsub = new Unsubscribe(broker.unsubscribe);
-            IAsyncResult RemAr = unsub.BeginInvoke(topic, null, null);
+            IAsyncResult RemAr = unsub.BeginInvoke(topic, subscriberURL, null, null);
         }
 
     }

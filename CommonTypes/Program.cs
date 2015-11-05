@@ -23,7 +23,7 @@ namespace CommonTypes
 
     public interface BrokerSubscribeInterface {
         void subscribe(string topic, string subscriberURL);
-        void unsubscribe(string topic);       
+        void unsubscribe(string topics, string ubscriberURL);       
     }
 
     [Serializable]

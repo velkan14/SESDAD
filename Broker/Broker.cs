@@ -139,10 +139,10 @@ namespace Broker
                 {
                     foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
                     {
-                        Console.WriteLine("foreach topicsProvidedByBroker");
+                        //Console.WriteLine("foreach topicsProvidedByBroker");
                         if (!entry.Value.Contains(topic))
                         {
-                            Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
+                            //Console.WriteLine("!entry.Value.Contains(" + topic + ")");
                             entry.Key.forwardInterest(this.url, topic);
                             Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
                             entry.Value.Add(topic);
@@ -154,7 +154,7 @@ namespace Broker
 
         }
 
-        public void unsubscribe(string topic)
+        public void unsubscribe(string topic, string subscriberURL)
         {
             throw new NotImplementedException();
         }
@@ -174,57 +174,49 @@ namespace Broker
 
             if (brokersByTopic.ContainsKey(topic))
             {
-                Console.WriteLine("brokersByTopic.ContainsKey(" + topic + ")");
+                //Console.WriteLine("brokersByTopic.ContainsKey(" + topic + ")");
                 foreach (BrokerToBrokerInterface broker in brokers)
                 {
-                    Console.WriteLine("foreach broker brokersByTopic");
+                    //Console.WriteLine("foreach broker brokersByTopic");
                     if (!broker.getURL().Equals(url))
                     {
-                        Console.WriteLine("!broker.getURL().Equals(" + url + ")");
+                        //Console.WriteLine("!broker.getURL().Equals(" + url + ")");
                         brokersByTopic[topic].Add(interestedBroker);
 
-                        foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
-                        {
-                            Console.WriteLine("foreach topicsProvidedByBroker");
-                            if (!entry.Key.getURL().Equals(url))
-                            {
-                                Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
-                                if (!entry.Value.Contains(topic))
-                                {
-                                    Console.WriteLine("!entry.Value.Contains(" + topic + ")");
-                                    entry.Key.forwardInterest(this.url, topic);
-                                    Console.WriteLine("Forwarded interest to " + entry.Key.getURL() + " on topic " + topic);
-                                    entry.Value.Add(topic);
-                                }
-                            }
-                        }
+                        forwardInstrestAux(url, topic);
                     }
                 }
-                Console.WriteLine();
 
             } else
             {
                 Console.WriteLine("!brokersByTopic.ContainsKey(" + topic + ")");
                 brokersByTopic.Add(topic, new List<BrokerToBrokerInterface> { interestedBroker });
-                foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
-                {
-                    Console.WriteLine("foreach topicsProvidedByBroker");
-                    if (!entry.Key.getURL().Equals(url))
-                    {
-                        Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
-                        if (!entry.Value.Contains(topic))
-                        {
-                            Console.WriteLine("!entry.Value.Contains(" + topic + ")");
-                            entry.Key.forwardInterest(this.url, topic);
-                            Console.WriteLine("Forwarded interest to " + entry.Key.getURL() + " on topic " + topic);
-                            entry.Value.Add(topic);
-                        }
-                    }
-                
-                }
-                Console.WriteLine();
+
+                forwardInstrestAux(url, topic);
             }
             
+        }
+
+        //para cada keyvaluepair<broker, topics que recebe desse broker> de topicsProvidedByBroker,
+        //se ainda nao recebemos o topico "topic" de um broker vizinho,
+        //enviamos lhe forwardInterest
+        public void forwardInstrestAux(string url, string topic)
+        {
+            foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+            {
+                //Console.WriteLine("foreach topicsProvidedByBroker");
+                if (!entry.Key.getURL().Equals(url))
+                {
+                    //Console.WriteLine("!entry.Key.getURL().Equals(" + url + ")");
+                    if (!entry.Value.Contains(topic))
+                    {
+                        //Console.WriteLine("!entry.Value.Contains(" + topic + ")");
+                        entry.Key.forwardInterest(this.url, topic);
+                        Console.WriteLine("Forwarded interest to " + entry.Key.getURL() + " on topic " + topic);
+                        entry.Value.Add(topic);
+                    }
+                }
+            }
         }
 
 
