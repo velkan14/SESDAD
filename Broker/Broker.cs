@@ -209,14 +209,21 @@ namespace Broker
 
         public void unsubscribe(string topic, string subscriberURL)
         {
+            Console.WriteLine("BTBI Unsubscribe " + subscriberURL + " topic: " + topic);
             SubscriberInterface subscriber = (SubscriberInterface)Activator.GetObject(typeof(SubscriberInterface), subscriberURL);
             foreach(SubscriberInterface sub in subscribersByTopic[topic])
             {
+                Console.WriteLine("foreach sub in subscribersByTopic[topic]");
                 if (sub.getURL().Equals(subscriberURL))
                 {
+                    Console.WriteLine("sub.getURL().Equals(subscriberURL)");
                     subscribersByTopic[topic].Remove(sub);
+
                     if (subscribersByTopic[topic].Count == 0)
+                    {
+                        Console.WriteLine("subscribersByTopic[topic].Count == 0");
                         subscribersByTopic.Remove(topic);
+                    }
 
                     break;
                 }
@@ -224,6 +231,7 @@ namespace Broker
 
             if (routing.Equals("filter"))
             {
+                Console.WriteLine("filter: forward insterest");
                 forwardDisinterest(url, topic);                
             }
         }

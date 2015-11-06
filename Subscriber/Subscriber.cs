@@ -90,6 +90,7 @@ namespace Subscriber
         {
             broker.unsubscribe(topic, myUrl);
             subscribedTopics.Remove(topic);
+            Console.WriteLine("Unsubscribed topic " + topic);
         }
     }
 }
