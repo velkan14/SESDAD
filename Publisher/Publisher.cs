@@ -43,7 +43,7 @@ namespace Publisher
 
         public void publish(int number, string topic, int interval)
         {
-            Notifier n = new Notifier(pm.notify);
+            //Notifier n = new Notifier(pm.notify);
             
             for (int i = 0; i < number; i++)
             {
@@ -58,7 +58,8 @@ namespace Publisher
                     broker.publishEvent(e);
                     string notification = String.Concat("PubEvent " + processName + ", " + processName + ", " + topic + ", ", eventContent);
                     Console.WriteLine(notification);
-                    n.BeginInvoke(notification, null, null);
+                    //n.BeginInvoke(notification, null, null);
+                    pm.notify(notification);
                     eventContent++;
                     Thread.Sleep(interval);
                 }
@@ -67,7 +68,8 @@ namespace Publisher
 
         public void status()
         {
-            throw new NotImplementedException();
+            if(freezeFlag) Console.WriteLine(String.Concat("I'm freezed and my sequence number is: ", eventContent));
+            else Console.WriteLine(String.Concat("My sequence number is: ", eventContent));
         }
         
         public void unfreeze()

@@ -33,7 +33,8 @@ namespace Subscriber
 
         public void status()
         {
-            throw new NotImplementedException();
+            SubscriberAsyncDoSomething RemoteDel = new SubscriberAsyncDoSomething(sub.status);
+            IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
         }
 
         public void subscribe(string topic)

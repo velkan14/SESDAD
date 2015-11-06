@@ -19,7 +19,7 @@ namespace Subscriber
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
         private bool freezeFlag = false;
         private int numberFreezes = 0;
-
+        private List<string> subscribedTopics = new List<string>();
         public delegate void Notifier(string s);
 
         public Subscriber(BrokerSubscribeInterface broker, NotificationReceiver notifier, string processName, string url)
@@ -42,11 +42,11 @@ namespace Subscriber
                 lock(this) numberFreezes++;
                 freezeEvent.WaitOne();
             }
-            Notifier n = new Notifier(notifier.notify);
+            //Notifier n = new Notifier(notifier.notify);
             string notification = "SubEvent " + processName + ", " + evt.PublisherName +", " + evt.Topic +", "+ evt.Content;
             Console.WriteLine(notification);
-            n.BeginInvoke(notification, null, null);
-
+            //n.BeginInvoke(notification, null, null);
+            notifier.notify(notification);
         }
         
         public void crash()
@@ -64,12 +64,14 @@ namespace Subscriber
 
         public void status()
         {
-            throw new NotImplementedException();
+            Console.WriteLine("Subscribed Topics:");
+            foreach (string s in subscribedTopics) Console.WriteLine("- " + s);
         }
 
         public void subscribe(string topic)
         {
             broker.subscribe(topic, myUrl);
+            subscribedTopics.Add(topic);
             Console.WriteLine("Subscribed topic " + topic);
         }
 
@@ -87,6 +89,7 @@ namespace Subscriber
         public void unsubscribe(string topic)
         {
             broker.unsubscribe(topic, myUrl);
+            subscribedTopics.Remove(topic);
         }
     }
 }
