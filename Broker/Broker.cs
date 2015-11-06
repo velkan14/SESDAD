@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Broker
@@ -11,6 +12,9 @@ namespace Broker
     class Broker :  BrokerToBrokerInterface, PMBroker, BrokerSubscribeInterface, BrokerPublishInterface
     {
         string url;
+        private int numberFreezes = 0;
+        private bool freezeFlag = false;
+        AutoResetEvent freezeEvent = new AutoResetEvent(false);
 
         List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
@@ -22,12 +26,17 @@ namespace Broker
         Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
 
         List<Event> events = new List<Event>();
-        string routing, ordering;
+        string routing, ordering, loggingLevel;
+        string processName;
+        NotificationReceiver pm;
 
-        public Broker(string routing, string ordering)
+        public Broker(NotificationReceiver pm, string processName, string routing, string ordering, string loggingLevel)
         {
+            this.pm = pm;
+            this.processName = processName;
             this.routing = routing;
             this.ordering = ordering;
+            this.loggingLevel = loggingLevel;
         }
 
         public void setUrl(string url)
@@ -56,6 +65,11 @@ namespace Broker
 
         public void forwardEvent(Event evt)
         {
+            if (freezeFlag)
+            {
+                lock(this) numberFreezes++;
+                freezeEvent.WaitOne();
+            }
             lock (this)
             {
                 bool exists = false;
@@ -70,6 +84,9 @@ namespace Broker
                         foreach (BrokerToBrokerInterface son in sons)
                         {
                             son.forwardEvent(evt);
+                            string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
+                            if (loggingLevel.Equals("full")) pm.notify(notification);
+                            Console.WriteLine(notification);
                         }
                         
                     }
@@ -80,14 +97,17 @@ namespace Broker
                         foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
                         {
                             keyTopic = entry.Key;
-                            if (keyTopic.Equals(evt.Topic))
+                            if (keyTopic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, keyTopic))
                             {
-                                foreach (BrokerToBrokerInterface broker in entry.Value) broker.forwardEvent(evt);
+                                foreach (BrokerToBrokerInterface broker in entry.Value)
+                                {
+                                    broker.forwardEvent(evt);
+                                    string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
+                                    if(loggingLevel.Equals("full")) pm.notify(notification);
+                                    Console.WriteLine(notification);
+                                }
                             }
-                            else if (isSubtopicOf(evt.Topic, keyTopic))
-                            {
-                                foreach (BrokerToBrokerInterface broker in entry.Value) broker.forwardEvent(evt);
-                            }
+                            
                         }
                         
                     }
@@ -160,21 +180,38 @@ namespace Broker
 
         public void freeze()
         {
-            throw new NotImplementedException();
+            lock (this)
+            {
+                freezeFlag = true;
+            }
         }
 
         public void status()
         {
-            throw new NotImplementedException();
+            Console.WriteLine("Dad:");
+            foreach(BrokerToBrokerInterface bb in dad) Console.WriteLine(bb.getURL());
+            Console.WriteLine("Sons:");
+            foreach (BrokerToBrokerInterface bb in sons) Console.WriteLine(bb.getURL());
         }
 
         public void unfreeze()
         {
-            throw new NotImplementedException();
+            lock (this)
+            {
+                freezeFlag = false;
+            }
+            for (int i = 0; i < numberFreezes; i++)
+                freezeEvent.Set();
+            numberFreezes = 0;
         }
 
         public void subscribe(string topic, string subscriberURL)
         {
+            if (freezeFlag)
+            {
+                numberFreezes++;
+                freezeEvent.WaitOne();
+            }
             lock (this)
             {
                 bool subExists = false;
@@ -223,6 +260,11 @@ namespace Broker
 
         public void unsubscribe(string topic, string subscriberURL)
         {
+            if (freezeFlag)
+            {
+                numberFreezes++;
+                freezeEvent.WaitOne();
+            }
             lock (this)
             {
                 SubscriberInterface subscriber = (SubscriberInterface)Activator.GetObject(typeof(SubscriberInterface), subscriberURL);
@@ -275,6 +317,7 @@ namespace Broker
                     else return;
                 }
             }
+            Console.WriteLine("Unsubscriber: " + subscriberURL + " topic: " + topic);
         }
 
         public void publishEvent(Event newEvent)

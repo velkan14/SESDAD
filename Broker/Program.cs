@@ -20,15 +20,20 @@ namespace Broker
             string url = args[1];
             string routing = args[2];
             string ordering = args[3];
+            string loggingLevel = args[4];
+            string pmURL = args[5];
             string port = url.Split(':')[2].Split('/')[0];
             string remotingName = url.Split('/')[3];
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
 
-            Broker broker = new Broker(routing, ordering);
-            broker.setUrl(url);
-
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
+
+            NotificationReceiver pm = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), pmURL);
+
+            Broker broker = new Broker(pm, processName, routing, ordering, loggingLevel);
+            broker.setUrl(url);
+
 
             PMBrokerImpl PMbroker = new PMBrokerImpl(broker);
             RemotingServices.Marshal(PMbroker, remotingName + "PM", typeof(PMBroker));

@@ -128,7 +128,7 @@ namespace PuppetMaster
                                     URL = splitedConfig[7];
                                     obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                         "tcp://" + ipPM + ":8086/PMInterface");
-                                    obj.createBroker(processName, URL, routingPolicy, ordering);
+                                    obj.createBroker(processName, URL, routingPolicy, ordering, loggingLevel, "tcp://" + ipPM + ":8086/PMNotifier");
                                     //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
                                     Site tmpSite = findSiteByName(sites, site);
                                     tmpSite.BrokerOnSiteURL = URL;

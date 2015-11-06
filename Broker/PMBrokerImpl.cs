@@ -48,17 +48,20 @@ namespace Broker
 
         public void freeze()
         {
-            throw new NotImplementedException();
+            Something delegated = new Something(broker.freeze);
+            IAsyncResult RemAr = delegated.BeginInvoke(null, null);
         }
 
         public void status()
         {
-            throw new NotImplementedException();
+            Something delegated = new Something(broker.status);
+            IAsyncResult RemAr = delegated.BeginInvoke(null, null);
         }
 
         public void unfreeze()
         {
-            throw new NotImplementedException();
+            Something delegated = new Something(broker.unfreeze);
+            IAsyncResult RemAr = delegated.BeginInvoke(null, null);
         }
     }
 }
