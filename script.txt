@@ -1,21 +1,7 @@
 Subscriber sub0 Subscribe A
 Subscriber sub1 Subscribe A
-Subscriber sub2 Subscribe A/abc/def
-Subscriber sub3 Subscribe A/abc
-Subscriber sub4 Subscribe A/ghi
-Subscriber sub5 Subscribe A/ghi/jkl
-Subscriber sub6 Subscribe A/b/c
-Subscriber sub7 Subscribe A/ghi
+
 Wait 3000
-Publisher publisher2 Publish 1 Ontopic A Interval 2000
-Wait 3000
-Subscriber sub0 Unsubscribe A
-Publisher publisher2 Publish 1 Ontopic A Interval 2000
-Wait 3000
-Subscriber sub1 Unsubscribe A
-Publisher publisher0 Publish 1 Ontopic A/ghi/jkl Interval 2000
-Wait 3000
-Publisher publisher3 Publish 1 Ontopic A/abc/def Interval 2000
-Wait 3000
-Publisher publisher2 Publish 1 Ontopic A/abc Interval 2000
+Publisher publisher1 Publish 6 Ontopic A Interval 2000
+
 

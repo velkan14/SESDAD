@@ -33,11 +33,13 @@ namespace CommonTypes
         private string topic;
         private string content;
         private string publisherName;
+        private int msgNumber;
 
-        public Event(string publisherName, string topic, string content) {
+        public Event(string publisherName, string topic, string content, int msgNumber) {
             this.publisherName = publisherName;
             this.topic = topic;
             this.content = content;
+            this.msgNumber = msgNumber;
         }
 
         public string Topic {
@@ -54,6 +56,10 @@ namespace CommonTypes
         public string Content {
             get { return content; }
             set { content = value; }
+        }
+
+        public int MsgNumber {
+            get { return msgNumber; }
         }
 
         public static bool operator ==(Event a, Event b)

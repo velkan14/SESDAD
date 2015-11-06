@@ -10,15 +10,7 @@ Process broker2 Is broker On site2 URL tcp://localhost:3335/broker
 Process broker3 Is broker On site3 URL tcp://localhost:3336/broker
 
 Process publisher0 Is publisher On site0 URL tcp://localhost:3337/pub
-Process publisher2 Is publisher On site2 URL tcp://localhost:3338/pub
-Process publisher3 Is publisher On site3 URL tcp://localhost:3339/pub
+Process publisher1 Is publisher On site1 URL tcp://localhost:3338/pub
 
 Process sub0 Is subscriber On site1 URL tcp://localhost:3340/sub
 Process sub1 Is subscriber On site1 URL tcp://localhost:3341/sub
-Process sub2 Is subscriber On site1 URL tcp://localhost:3342/sub
-Process sub3 Is subscriber On site1 URL tcp://localhost:3343/sub
-Process sub4 Is subscriber On site1 URL tcp://localhost:3344/sub
-Process sub5 Is subscriber On site1 URL tcp://localhost:3345/sub
-Process sub6 Is subscriber On site1 URL tcp://localhost:3346/sub
-
-Process sub7 Is subscriber On site3 URL tcp://localhost:3347/sub

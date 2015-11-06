@@ -15,9 +15,10 @@ namespace Broker
         List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
+        List<SubAux> subLastMsgReceived = new List<SubAux>();
 
         Dictionary<string, List<BrokerToBrokerInterface>> brokersByTopic = new Dictionary<string, List<BrokerToBrokerInterface>>();
-
+        
         Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
 
         List<Event> events = new List<Event>();
@@ -95,12 +96,37 @@ namespace Broker
                     foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
                     {
                         topic = entry.Key;
-                        if (topic.Equals(evt.Topic))
+                        if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
                         {
-                            foreach (SubscriberInterface sub in entry.Value) sub.deliverToSub(evt);
-                        }
-                        else if(isSubtopicOf(evt.Topic, topic)) { 
-                            foreach (SubscriberInterface sub in entry.Value) sub.deliverToSub(evt);
+                            foreach (SubscriberInterface sub in entry.Value)
+                            {
+                                if (ordering == "FIFO")
+                                {
+                                    List<Event> eventsToRemove = new List<Event>();
+                                    //olha-me o comboio
+                                    SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                                    if (evt.MsgNumber == subAux.LastMsgNumber + 1)
+                                    {
+                                        sub.deliverToSub(evt);
+                                        subAux.LastMsgNumber++;
+                                        foreach (Event pendingEvent in subAux.MsgQueue)
+                                        {
+                                            if (pendingEvent.MsgNumber == subAux.LastMsgNumber + 1)
+                                            {
+                                                sub.deliverToSub(pendingEvent);
+                                                subAux.LastMsgNumber++;
+                                                eventsToRemove.Add(pendingEvent);
+                                            }
+                                        }
+                                        subAux.updateMsgQueue(eventsToRemove);
+                                        eventsToRemove.Clear();
+                                    }
+                                    else
+                                    {
+                                        subAux.addToQueue(evt);
+                                    }
+                                } else sub.deliverToSub(evt);
+                            }
                         }
                     }
                 }
@@ -151,9 +177,24 @@ namespace Broker
         {
             lock (this)
             {
+                bool subExists = false;
                 SubscriberInterface newSubscriber = (SubscriberInterface)Activator.GetObject(
                            typeof(SubscriberInterface), subscriberURL);
 
+                if (ordering == "FIFO")
+                {
+                    foreach (SubAux sub in subLastMsgReceived)
+                    {
+                        if (sub.Sub.getURL().Equals(subscriberURL))
+                        {
+                            subExists = true;
+                            break;
+                        }
+                    }
+                    if (!subExists)
+                        subLastMsgReceived.Add(new SubAux(newSubscriber));
+                    subExists = false;
+                }
                 if (subscribersByTopic.ContainsKey(topic))
                     subscribersByTopic[topic].Add(newSubscriber);
                 else
