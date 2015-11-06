@@ -1,21 +1,34 @@
-19:19:39 6 de novembro de 2015 : Wait 5000
-19:19:40 6 de novembro de 2015 : Subscriber sub0 Subscribe A
-19:19:45 6 de novembro de 2015 : Wait 5000
-19:19:46 6 de novembro de 2015 : Publisher publisher3 Publish 1 Ontopic A Interval 2000
-19:19:48 6 de novembro de 2015 : PubEvent publisher3, publisher3, A, 0
-19:19:49 6 de novembro de 2015 : SubEvent sub0, publisher3, A, publisher3: 0
-19:19:51 6 de novembro de 2015 : Wait 5000
-19:19:52 6 de novembro de 2015 : Publisher publisher1 Publish 1 Ontopic A/abc Interval 2000
-19:19:53 6 de novembro de 2015 : SubEvent sub0, publisher1, A/abc, publisher1: 0
-19:19:54 6 de novembro de 2015 : PubEvent publisher1, publisher1, A/abc, 0
-19:19:55 6 de novembro de 2015 : Wait 3000
-19:19:56 6 de novembro de 2015 : Subscriber sub1 Subscribe A/def/ghi
-19:19:59 6 de novembro de 2015 : Wait 3000
-19:19:59 6 de novembro de 2015 : Publisher publisher3 Publish 1 Ontopic A/def/ghi Interval 2000
-19:19:59 6 de novembro de 2015 : PubEvent publisher3, publisher3, A/def/ghi, 1
-19:19:59 6 de novembro de 2015 : SubEvent sub0, publisher3, A/def/ghi, publisher3: 1
-19:20:01 6 de novembro de 2015 : SubEvent sub1, publisher3, A/def/ghi, publisher3: 1
-19:20:02 6 de novembro de 2015 : Wait 3000
-19:20:02 6 de novembro de 2015 : Subscriber sub0 Unsubscribe A
-19:20:02 6 de novembro de 2015 : Publisher publisher1 Publish 1 Ontopic A Interval 2000
-19:20:02 6 de novembro de 2015 : PubEvent publisher1, publisher1, A, 1
+21:15:11 6 de novembro de 2015 : Subscriber sub0 Subscribe A
+21:15:12 6 de novembro de 2015 : Subscriber sub1 Subscribe A
+21:15:13 6 de novembro de 2015 : Subscriber sub2 Subscribe A/abc/def
+21:15:14 6 de novembro de 2015 : Subscriber sub3 Subscribe A/abc
+21:15:15 6 de novembro de 2015 : Subscriber sub4 Subscribe A/ghi
+21:15:16 6 de novembro de 2015 : Subscriber sub5 Subscribe A/ghi/jkl
+21:15:17 6 de novembro de 2015 : Subscriber sub6 Subscribe A/b/c
+21:15:18 6 de novembro de 2015 : Subscriber sub7 Subscribe A/ghi
+21:15:21 6 de novembro de 2015 : Wait 3000
+21:15:22 6 de novembro de 2015 : Publisher publisher2 Publish 1 Ontopic A Interval 2000
+21:15:24 6 de novembro de 2015 : PubEvent publisher2, publisher2, A, 0
+21:15:25 6 de novembro de 2015 : Wait 3000
+21:15:25 6 de novembro de 2015 : Subscriber sub0 Unsubscribe A
+21:15:25 6 de novembro de 2015 : Publisher publisher2 Publish 1 Ontopic A Interval 2000
+21:15:25 6 de novembro de 2015 : SubEvent sub0, publisher2, A, publisher2: 0
+21:15:26 6 de novembro de 2015 : PubEvent publisher2, publisher2, A, 1
+21:15:26 6 de novembro de 2015 : SubEvent sub1, publisher2, A, publisher2: 0
+21:15:27 6 de novembro de 2015 : SubEvent sub1, publisher2, A, publisher2: 1
+21:15:28 6 de novembro de 2015 : Wait 3000
+21:15:28 6 de novembro de 2015 : Subscriber sub1 Unsubscribe A
+21:15:29 6 de novembro de 2015 : Publisher publisher0 Publish 1 Ontopic A/ghi/jkl Interval 2000
+21:15:31 6 de novembro de 2015 : PubEvent publisher0, publisher0, A/ghi/jkl, 0
+21:15:32 6 de novembro de 2015 : Wait 3000
+21:15:32 6 de novembro de 2015 : SubEvent sub4, publisher0, A/ghi/jkl, publisher0: 0
+21:15:32 6 de novembro de 2015 : SubEvent sub7, publisher0, A/ghi/jkl, publisher0: 0
+21:15:33 6 de novembro de 2015 : Publisher publisher3 Publish 1 Ontopic A/abc/def Interval 2000
+21:15:33 6 de novembro de 2015 : SubEvent sub5, publisher0, A/ghi/jkl, publisher0: 0
+21:15:35 6 de novembro de 2015 : PubEvent publisher3, publisher3, A/abc/def, 0
+21:15:36 6 de novembro de 2015 : Wait 3000
+21:15:36 6 de novembro de 2015 : Publisher publisher2 Publish 1 Ontopic A/abc Interval 2000
+21:15:36 6 de novembro de 2015 : PubEvent publisher2, publisher2, A/abc, 2
+21:15:36 6 de novembro de 2015 : SubEvent sub2, publisher3, A/abc/def, publisher3: 0
+21:15:37 6 de novembro de 2015 : SubEvent sub3, publisher2, A/abc, publisher2: 2
+21:15:37 6 de novembro de 2015 : SubEvent sub3, publisher3, A/abc/def, publisher3: 0
