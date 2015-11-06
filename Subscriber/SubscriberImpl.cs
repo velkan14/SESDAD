@@ -22,5 +22,9 @@ namespace Subscriber
             DeliverEvent de = new DeliverEvent(sub.deliverToSub);
             de.BeginInvoke(evt, null, null);
         }
+        public string getURL()
+        {
+            return sub.getURL();
+        }
     }
 }

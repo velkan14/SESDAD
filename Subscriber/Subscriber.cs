@@ -30,6 +30,11 @@ namespace Subscriber
             this.myUrl = url;
         }
 
+        public string getURL()
+        {
+            return myUrl;
+        }
+
         public void deliverToSub(Event evt)
         {
             if (freezeFlag)

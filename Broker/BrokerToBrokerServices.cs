@@ -37,5 +37,11 @@ namespace Broker
             forwardInterestAsync forwardDelegate = new forwardInterestAsync(broker.forwardInterest);
             IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, topic, null, null);
         }
+
+        public void forwardDisinterest(string url, string topic)
+        {
+            forwardInterestAsync forwardDelegate = new forwardInterestAsync(broker.forwardDisinterest);
+            IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, topic, null, null);
+        }
     }
 }

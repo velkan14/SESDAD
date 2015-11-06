@@ -192,24 +192,62 @@ namespace Broker
                 {
                     foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
                     {
-                        //Console.WriteLine("foreach topicsProvidedByBroker");
                         if (!entry.Value.Contains(topic))
                         {
-                            //Console.WriteLine("!entry.Value.Contains(" + topic + ")");
+                            foreach (string topicValue in entry.Value)
+                                if (isSubtopicOf(topic, topicValue)) return;
+
                             entry.Key.forwardInterest(this.url, topic);
                             Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
                             entry.Value.Add(topic);
                         }
-
                     }
                 }
-            }
 
+            }
         }
 
         public void unsubscribe(string topic, string subscriberURL)
         {
-            throw new NotImplementedException();
+            SubscriberInterface subscriber = (SubscriberInterface)Activator.GetObject(typeof(SubscriberInterface), subscriberURL);
+            foreach(SubscriberInterface sub in subscribersByTopic[topic])
+            {
+                if (sub.getURL().Equals(subscriberURL))
+                {
+                    subscribersByTopic[topic].Remove(sub);
+                    if (subscribersByTopic[topic].Count == 0)
+                        subscribersByTopic.Remove(topic);
+
+                    break;
+                }
+            }
+
+            if (routing.Equals("filter"))
+            {
+                string auxTopic = "";
+                foreach (KeyValuePair<string, List<SubscriberInterface>> item in subscribersByTopic)
+                {
+                    //quero continuar a receber o topico da rede de brokers
+                    if (item.Key.Equals(topic)) return;
+
+                    else if (isSubtopicOf(item.Key, topic))
+                    {
+                        if(item.Key.Length > auxTopic.Length) auxTopic = item.Key;
+                    }
+                }
+
+                if (auxTopic.Equals(""))
+                {
+                    //forwardDisinterest
+                }
+
+                else
+                {
+                    //change interest
+                }
+
+                
+            }
         }
 
         public void publishEvent(Event newEvent)
@@ -242,7 +280,7 @@ namespace Broker
 
             } else
             {
-                Console.WriteLine("!brokersByTopic.ContainsKey(" + topic + ")");
+                //Console.WriteLine("!brokersByTopic.ContainsKey(" + topic + ")");
                 brokersByTopic.Add(topic, new List<BrokerToBrokerInterface> { interestedBroker });
 
                 forwardInstrestAux(url, topic);
@@ -270,6 +308,13 @@ namespace Broker
                     }
                 }
             }
+        }
+
+
+
+        public void forwardDisinterest(string url, string topic)
+        {
+            throw new NotImplementedException();
         }
 
 

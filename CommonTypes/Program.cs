@@ -9,6 +9,7 @@ namespace CommonTypes
 {
     public interface SubscriberInterface {
         void deliverToSub(Event evt);
+        string getURL();
     }
 
     public interface BrokerPublishInterface {
@@ -18,12 +19,13 @@ namespace CommonTypes
     public interface BrokerToBrokerInterface {
         void forwardEvent(Event evt);
         void forwardInterest(string url, string topic);
+        void forwardDisinterest(string url, string topic);
         string getURL();
     }
 
     public interface BrokerSubscribeInterface {
         void subscribe(string topic, string subscriberURL);
-        void unsubscribe(string topics, string ubscriberURL);       
+        void unsubscribe(string topics, string subscriberURL);       
     }
 
     [Serializable]
