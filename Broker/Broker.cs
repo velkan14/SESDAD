@@ -224,29 +224,7 @@ namespace Broker
 
             if (routing.Equals("filter"))
             {
-                string auxTopic = "";
-                foreach (KeyValuePair<string, List<SubscriberInterface>> item in subscribersByTopic)
-                {
-                    //quero continuar a receber o topico da rede de brokers
-                    if (item.Key.Equals(topic)) return;
-
-                    else if (isSubtopicOf(item.Key, topic))
-                    {
-                        if(item.Key.Length > auxTopic.Length) auxTopic = item.Key;
-                    }
-                }
-
-                if (auxTopic.Equals(""))
-                {
-                    //forwardDisinterest
-                }
-
-                else
-                {
-                    //change interest
-                }
-
-                
+                forwardDisinterest(url, topic);                
             }
         }
 
@@ -274,7 +252,7 @@ namespace Broker
                         //Console.WriteLine("!broker.getURL().Equals(" + url + ")");
                         brokersByTopic[topic].Add(interestedBroker);
 
-                        forwardInstrestAux(url, topic);
+                        forwardInterestAux(url, topic);
                     }
                 }
 
@@ -283,7 +261,7 @@ namespace Broker
                 //Console.WriteLine("!brokersByTopic.ContainsKey(" + topic + ")");
                 brokersByTopic.Add(topic, new List<BrokerToBrokerInterface> { interestedBroker });
 
-                forwardInstrestAux(url, topic);
+                forwardInterestAux(url, topic);
             }
             
         }
@@ -291,7 +269,7 @@ namespace Broker
         //para cada keyvaluepair<broker, topics que recebe desse broker> de topicsProvidedByBroker,
         //se ainda nao recebemos o topico "topic" de um broker vizinho,
         //enviamos lhe forwardInterest
-        public void forwardInstrestAux(string url, string topic)
+        public void forwardInterestAux(string url, string topic)
         {
             foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
             {
@@ -310,11 +288,73 @@ namespace Broker
             }
         }
 
+        public void forwardDisinterestAux(string url, string topic)
+        {
+            foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+            {
+                //Console.WriteLine("foreach topicsProvidedByBroker");
+                if (!entry.Key.getURL().Equals(url))
+                {
+                    if (entry.Value.Contains(topic))
+                    {
+                        entry.Key.forwardDisinterest(this.url, topic);
+                        Console.WriteLine("Forwarded disinterest to " + entry.Key.getURL() + " on topic " + topic);
+                        entry.Value.Remove(topic);
+                    }
+                }
+            }
+        }
+
+        public void forwardDisinterestAux2(string url, string topic)
+        {
+            string auxTopicSub = "";
+            string auxTopicBro = "";
+            if (!subscribersByTopic.ContainsKey(topic))
+            {
+                foreach (KeyValuePair<string, List<SubscriberInterface>> item in subscribersByTopic)
+                {
+                    if (isSubtopicOf(item.Key, topic))
+                    {
+                        if (item.Key.Length > auxTopicSub.Length) auxTopicSub = item.Key;
+                    }
+                }
+            }
+            else { return; }
+
+            if (!brokersByTopic.ContainsKey(topic))
+            {
+                foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> item in brokersByTopic)
+                {
+                    if (isSubtopicOf(item.Key, topic))
+                    {
+                        if (item.Key.Length > auxTopicBro.Length) auxTopicBro = item.Key;
+                    }
+                }
+            }
+            else { return; }
+
+
+            if ((!auxTopicSub.Equals("")) || (!auxTopicBro.Equals("")))
+            {
+                forwardDisinterestAux(url, topic);
+                if (auxTopicSub.Length >= auxTopicBro.Length) forwardInterestAux(url, auxTopicBro);
+                else forwardInterestAux(url, auxTopicSub);
+            }
+            else
+            {
+                forwardDisinterestAux(url, topic);
+            }
+        }
 
 
         public void forwardDisinterest(string url, string topic)
         {
-            throw new NotImplementedException();
+            BrokerToBrokerInterface disinterestedBroker = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
+            
+            brokersByTopic[topic].Remove(disinterestedBroker);
+
+            forwardDisinterestAux2(url, topic);
+            
         }
 
 
