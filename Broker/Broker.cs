@@ -36,6 +36,23 @@ namespace Broker
 
         public string getURL() { return url; }
 
+        public bool isSubtopicOf(string subtopic, string topic)
+        {
+            string[] arrayTopicsSub = subtopic.Split('/');
+            string[] arrayTopics = topic.Split('/');
+            
+            if (arrayTopicsSub.Length > arrayTopics.Length)
+            {
+                for (int i = 0; i < arrayTopics.Length; i++)
+                {
+                    if (!arrayTopicsSub[i].Equals(arrayTopics[i])) return false;
+                }
+                return true;
+            }
+            return false;
+            
+        }
+
         public void forwardEvent(Event evt)
         {
             lock (this)
@@ -59,6 +76,24 @@ namespace Broker
                     }
                     else if (routing.Equals("filter"))
                     {
+
+                        string keyTopic;
+                        //List<SubscriberInterface> flattenSubscriberList;
+                        foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
+                        {
+                            keyTopic = entry.Key;
+                            if (keyTopic.Equals(evt.Topic))
+                            {
+                                //subscribersByTopic.TryGetValue(evt.Topic, out flattenSubscriberList);
+                                foreach (BrokerToBrokerInterface broker in entry.Value) broker.forwardEvent(evt);
+                            }
+                            else if (isSubtopicOf(evt.Topic, keyTopic))
+                            {
+                                foreach (BrokerToBrokerInterface broker in entry.Value) broker.forwardEvent(evt);
+                            }
+                        }
+
+                        /*
                         List<BrokerToBrokerInterface> flattenBrokerList;
                         if (brokersByTopic.TryGetValue(evt.Topic, out flattenBrokerList))
                         {
@@ -67,8 +102,25 @@ namespace Broker
                                 broker.forwardEvent(evt);
                             }
                         }
+                        */
                     }
 
+                    string topic;
+                    //List<SubscriberInterface> flattenSubscriberList;
+                    foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+                    {
+                        topic = entry.Key;
+                        if (topic.Equals(evt.Topic))
+                        {
+                            //subscribersByTopic.TryGetValue(evt.Topic, out flattenSubscriberList);
+                            foreach (SubscriberInterface sub in entry.Value) sub.deliverToSub(evt);
+                        }
+                        else if(isSubtopicOf(evt.Topic, topic)) { 
+                            foreach (SubscriberInterface sub in entry.Value) sub.deliverToSub(evt);
+                        }
+                    }
+
+                    /*
                     List<SubscriberInterface> flattenList;
                     if (subscribersByTopic.TryGetValue(evt.Topic, out flattenList))
                     {
@@ -77,6 +129,7 @@ namespace Broker
                             sub.deliverToSub(evt);
                         }
                     }
+                    */
                 }
             }
         }

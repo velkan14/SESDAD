@@ -81,7 +81,7 @@ namespace Subscriber
 
         public void unsubscribe(string topic)
         {
-            broker.unsubscribe(topic);
+            broker.unsubscribe(topic, myUrl);
         }
     }
 }

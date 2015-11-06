@@ -2,9 +2,7 @@ Wait 10000
 Subscriber sub0 Subscribe A
 Wait 10000
 Publisher publisher3 Publish 3 Ontopic A Interval 2000
-Freeze publisher3
 Wait 5000
-Publisher publisher3 Publish 3 Ontopic B Interval 2000
-Publisher publisher1 Publish 3 Ontopic A Interval 2000
+Publisher publisher1 Publish 3 Ontopic A/abc Interval 2000
 Subscriber sub1 Subscribe A
-Publisher publisher3 Publish 3 Ontopic A Interval 2000
+Publisher publisher3 Publish 3 Ontopic A/def/ghi Interval 2000
