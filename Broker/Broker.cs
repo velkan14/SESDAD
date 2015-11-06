@@ -188,6 +188,8 @@ namespace Broker
 
                 Console.WriteLine("Subscriber: " + subscriberURL + " topic: " + topic);
 
+                Console.WriteLine("subscribersByTopic[topic].Count : " + subscribersByTopic[topic].Count);
+
                 if (routing.Equals("filter"))
                 {
                     foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
@@ -211,28 +213,59 @@ namespace Broker
         {
             Console.WriteLine("BTBI Unsubscribe " + subscriberURL + " topic: " + topic);
             SubscriberInterface subscriber = (SubscriberInterface)Activator.GetObject(typeof(SubscriberInterface), subscriberURL);
-            foreach(SubscriberInterface sub in subscribersByTopic[topic])
+
+            int index = 0;
+            bool topicRemoved = false;
+            foreach (SubscriberInterface sub in subscribersByTopic[topic])
             {
+                
                 Console.WriteLine("foreach sub in subscribersByTopic[topic]");
                 if (sub.getURL().Equals(subscriberURL))
                 {
                     Console.WriteLine("sub.getURL().Equals(subscriberURL)");
-                    subscribersByTopic[topic].Remove(sub);
-
-                    if (subscribersByTopic[topic].Count == 0)
+                   
+                    Console.WriteLine("subscribersByTopic[topic].Count : " + subscribersByTopic[topic].Count);
+                    if (subscribersByTopic[topic].Count == 1)
                     {
-                        Console.WriteLine("subscribersByTopic[topic].Count == 0");
+                        Console.WriteLine("if");
                         subscribersByTopic.Remove(topic);
+                        topicRemoved = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("else");
+                        subscribersByTopic[topic].RemoveAt(index);
+                        return;
                     }
 
+                    Console.WriteLine("break");
                     break;
                 }
+                index++;
             }
 
-            if (routing.Equals("filter"))
+            if (routing.Equals("filter") && topicRemoved)
             {
-                Console.WriteLine("filter: forward insterest");
-                forwardDisinterest(url, topic);                
+                if (!brokersByTopic.ContainsKey(topic))
+                {
+                    List<string> wantedTopics = mergeInterestedSubsAndBrokers(topic);
+                    foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+                    {
+                        if (entry.Value.Contains(topic))
+                        {
+                            entry.Key.forwardDisinterest(this.url, topic);
+                            entry.Value.Remove(topic);
+
+                            foreach (string newTopic in wantedTopics)
+                            {
+                                entry.Key.forwardInterest(this.url, newTopic);
+                                entry.Value.Add(topic);
+                            }
+                        }
+                    }
+                }
+                else return;
+                             
             }
         }
 
@@ -296,73 +329,132 @@ namespace Broker
             }
         }
 
-        public void forwardDisinterestAux(string url, string topic)
-        {
-            foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
-            {
-                //Console.WriteLine("foreach topicsProvidedByBroker");
-                if (!entry.Key.getURL().Equals(url))
-                {
-                    if (entry.Value.Contains(topic))
-                    {
-                        entry.Key.forwardDisinterest(this.url, topic);
-                        Console.WriteLine("Forwarded disinterest to " + entry.Key.getURL() + " on topic " + topic);
-                        entry.Value.Remove(topic);
-                    }
-                }
-            }
-        }
-
-        public void forwardDisinterestAux2(string url, string topic)
-        {
-            string auxTopicSub = "";
-            string auxTopicBro = "";
-            if (!subscribersByTopic.ContainsKey(topic))
-            {
-                foreach (KeyValuePair<string, List<SubscriberInterface>> item in subscribersByTopic)
-                {
-                    if (isSubtopicOf(item.Key, topic))
-                    {
-                        if (item.Key.Length > auxTopicSub.Length) auxTopicSub = item.Key;
-                    }
-                }
-            }
-            else { return; }
-
-            if (!brokersByTopic.ContainsKey(topic))
-            {
-                foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> item in brokersByTopic)
-                {
-                    if (isSubtopicOf(item.Key, topic))
-                    {
-                        if (item.Key.Length > auxTopicBro.Length) auxTopicBro = item.Key;
-                    }
-                }
-            }
-            else { return; }
-
-
-            if ((!auxTopicSub.Equals("")) || (!auxTopicBro.Equals("")))
-            {
-                forwardDisinterestAux(url, topic);
-                if (auxTopicSub.Length >= auxTopicBro.Length) forwardInterestAux(url, auxTopicBro);
-                else forwardInterestAux(url, auxTopicSub);
-            }
-            else
-            {
-                forwardDisinterestAux(url, topic);
-            }
-        }
-
-
+        
         public void forwardDisinterest(string url, string topic)
         {
-            BrokerToBrokerInterface disinterestedBroker = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
-            
-            brokersByTopic[topic].Remove(disinterestedBroker);
+            Console.WriteLine("forwardDisinterest");
+            int index = 0;
+            bool topicRemoved = false;
+            foreach (BrokerToBrokerInterface broker in brokersByTopic[topic])
+            {
+                Console.WriteLine("foreach sub in brokersByTopic[topic]");
+                if (broker.getURL().Equals(url))
+                {
+                    Console.WriteLine("sub.getURL().Equals(subscriberURL)");
 
-            forwardDisinterestAux2(url, topic);
+                    Console.WriteLine("brokersByTopic[topic].Count : " + brokersByTopic[topic].Count);
+                    if (brokersByTopic[topic].Count == 1)
+                    {
+                        Console.WriteLine("if");
+                        brokersByTopic.Remove(topic);
+                        topicRemoved = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("else");
+                        brokersByTopic[topic].RemoveAt(index);
+                        return;
+                    }
+
+                    Console.WriteLine("break");
+                    break;
+                }
+                index++;
+            }
+
+            if (topicRemoved)
+            {
+                if (!subscribersByTopic.ContainsKey(topic))
+                {
+                    List<string> wantedTopics = mergeInterestedSubsAndBrokers(topic);
+                    foreach (KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+                    {
+                        if (entry.Value.Contains(topic))
+                        {
+                            entry.Key.forwardDisinterest(this.url, topic);
+                            entry.Value.Remove(topic);
+
+                            foreach (string newTopic in wantedTopics)
+                            {
+                                entry.Key.forwardInterest(this.url, newTopic);
+                                entry.Value.Add(topic);
+                            }
+                        }
+                    }
+                }
+                else return;
+
+            }
             
+        }
+
+      
+        public List<string> subscribersByTopicSubtopicsOf(string topic)
+        {
+
+            List<string> subtopics = new List<string>();
+            foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+            {
+                if (isSubtopicOf(entry.Key, topic)) subtopics.Add(entry.Key);
+            }
+
+            return reorganizeSubtopics(subtopics);
+
+        }
+
+        public List<string> brokersByTopicSubtopicsOf(string topic)
+        {
+
+            List<string> subtopics = new List<string>();
+            foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
+            {
+                if (isSubtopicOf(entry.Key, topic)) subtopics.Add(entry.Key);
+            }
+
+            return reorganizeSubtopics(subtopics);
+
+        }
+
+        public List<string> mergeInterestedSubsAndBrokers(string topic)
+        {
+            var stillInterestedSubscribers = subscribersByTopicSubtopicsOf(topic);
+            var stillInterestedBrokers = brokersByTopicSubtopicsOf(topic);
+
+            stillInterestedSubscribers.Union(stillInterestedBrokers);
+
+            return reorganizeSubtopics(stillInterestedSubscribers);
+        }
+
+        public List<string> reorganizeSubtopics(List<string> subtopics)
+        {
+            List<string> stillInterestedTopics = new List<string>();
+            bool isSubtopic = false;
+            foreach (string a in subtopics)
+            {
+                isSubtopic = false;
+                if (stillInterestedTopics.Count > 0)
+                {
+                    int index = 0;
+                    foreach (string b in stillInterestedTopics)
+                    {
+                        if (isSubtopicOf(a, b))
+                        {
+                            isSubtopic = true;
+                            break;
+                        }
+                        else if (isSubtopicOf(b, a))
+                        {
+                            stillInterestedTopics[index] = a;
+                            break;
+                        }
+                        index++;
+                    }
+                }
+                else stillInterestedTopics.Add(a);
+
+                if (!isSubtopic) stillInterestedTopics.Add(a);
+            }
+            return subtopics;
         }
 
 
