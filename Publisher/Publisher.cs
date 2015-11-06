@@ -54,7 +54,7 @@ namespace Publisher
                 }
                 lock (this)
                 {
-                    Event e = new Event(processName, topic, eventContent.ToString());
+                    Event e = new Event(processName, topic, processName + ": " + eventContent.ToString());
                     broker.publishEvent(e);
                     string notification = String.Concat("PubEvent " + processName + ", " + processName + ", " + topic + ", ", eventContent);
                     Console.WriteLine(notification);
