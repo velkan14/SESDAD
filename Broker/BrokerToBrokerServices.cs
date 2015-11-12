@@ -14,7 +14,7 @@ namespace Broker
         public BrokerToBrokerServices(Broker broker) {
             this.broker = broker;
         }
-        public delegate void forwardEventAsync(Event evt);
+        public delegate void forwardEventAsync(string url, Event evt);
         public static void OurRemoteAsyncCallBack(IAsyncResult ar)
         {
             forwardEventAsync del = (forwardEventAsync)((AsyncResult)ar).AsyncDelegate;
@@ -25,10 +25,10 @@ namespace Broker
 
         public string getURL() { return broker.getURL(); }
 
-        public void forwardEvent(Event evt) {
+        public void forwardEvent(string url, Event evt) {
             forwardEventAsync forwardDelegate = new forwardEventAsync(broker.forwardEvent);
             AsyncCallback RemoteCallback = new AsyncCallback(BrokerToBrokerServices.OurRemoteAsyncCallBack);
-            IAsyncResult RemAr = forwardDelegate.BeginInvoke(evt, RemoteCallback, null);
+            IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, evt, RemoteCallback, null);
         }
 
         public delegate void forwardInterestAsync(string url, string topic);

@@ -63,7 +63,7 @@ namespace Broker
             
         }
 
-        public void forwardEvent(Event evt)
+        public void forwardEvent(string url, Event evt)
         {
             if (freezeFlag)
             {
@@ -80,10 +80,10 @@ namespace Broker
 
                     if (routing.Equals("flooding"))
                     {
-                        foreach (BrokerToBrokerInterface d in dad) d.forwardEvent(evt);
+                        foreach (BrokerToBrokerInterface d in dad) d.forwardEvent(this.url,evt);
                         foreach (BrokerToBrokerInterface son in sons)
                         {
-                            son.forwardEvent(evt);
+                            son.forwardEvent(this.url, evt);
                             string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
                             if (loggingLevel.Equals("full")) pm.notify(notification);
                             Console.WriteLine(notification);
@@ -101,10 +101,14 @@ namespace Broker
                             {
                                 foreach (BrokerToBrokerInterface broker in entry.Value)
                                 {
-                                    broker.forwardEvent(evt);
-                                    string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
-                                    if(loggingLevel.Equals("full")) pm.notify(notification);
-                                    Console.WriteLine(notification);
+                                    
+                                    if (!broker.getURL().Equals(url))
+                                    {
+                                        broker.forwardEvent(this.url, evt);
+                                        string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
+                                        if (loggingLevel.Equals("full")) pm.notify(notification);
+                                        Console.WriteLine(notification);
+                                    }
                                 }
                             }
                             
@@ -322,7 +326,7 @@ namespace Broker
 
         public void publishEvent(Event newEvent)
         {
-            forwardEvent(newEvent);
+            forwardEvent(this.url, newEvent);
             Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
         }
 
