@@ -20,9 +20,8 @@ namespace Broker
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
         List<SubAux> subLastMsgReceived = new List<SubAux>();
-
+        Dictionary<string, List<SubAux>> subLastMsgReceivedByPub = new Dictionary<string, List<SubAux>>();
         Dictionary<string, List<BrokerToBrokerInterface>> brokersByTopic = new Dictionary<string, List<BrokerToBrokerInterface>>();
-        
         Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
 
         List<Event> events = new List<Event>();
@@ -126,24 +125,29 @@ namespace Broker
                             {
                                 if (ordering == "FIFO")
                                 {
+                                    string pubURL = evt.PublisherName;                                  
                                     List<Event> eventsToRemove = new List<Event>();
-                                    //olha-me o comboio
                                     SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
-                                    if (evt.MsgNumber == subAux.LastMsgNumber + 1)
+                                    int nextLastMsgNumber = subAux.LastMsgNumber(pubURL) + 1;
+                                    if (evt.MsgNumber == nextLastMsgNumber)
                                     {
                                         sub.deliverToSub(evt);
-                                        subAux.LastMsgNumber++;
-                                        foreach (Event pendingEvent in subAux.MsgQueue)
+                                        subAux.UpdateLastMsgNumber(pubURL);
+                                        if (subAux.MsgQueue(pubURL) != null)
                                         {
-                                            if (pendingEvent.MsgNumber == subAux.LastMsgNumber + 1)
+                                            foreach (Event pendingEvent in subAux.MsgQueue(pubURL))
                                             {
-                                                sub.deliverToSub(pendingEvent);
-                                                subAux.LastMsgNumber++;
-                                                eventsToRemove.Add(pendingEvent);
+                                                if (pendingEvent.MsgNumber == nextLastMsgNumber)
+                                                {
+                                                    sub.deliverToSub(pendingEvent);
+                                                    subAux.UpdateLastMsgNumber(pubURL);
+                                                    eventsToRemove.Add(pendingEvent);
+                                                }
                                             }
+                                            subAux.updateMsgQueue(pubURL, eventsToRemove);
+                                            eventsToRemove.Clear();
                                         }
-                                        subAux.updateMsgQueue(eventsToRemove);
-                                        eventsToRemove.Clear();
+                                        
                                     }
                                     else
                                     {
@@ -233,7 +237,10 @@ namespace Broker
                         }
                     }
                     if (!subExists)
+                    {
                         subLastMsgReceived.Add(new SubAux(newSubscriber));
+                    }
+                        
                     subExists = false;
                 }
                 if (subscribersByTopic.ContainsKey(topic))

@@ -10,44 +10,72 @@ namespace Broker
     class SubAux
     {
         SubscriberInterface sub;
-        int lastMsgNumber;
-        List<Event> msgQueue = new List<Event>();
+        int initLastMsgNumber = -1;
+        Dictionary<string, List<Event>> msgQueueByPub = new Dictionary<string, List<Event>>();
+        Dictionary<string, int> lastMsgNumberByPub = new Dictionary<string, int>();
 
         public SubAux(SubscriberInterface sub)
         {
-            lastMsgNumber = -1;
             this.sub = sub;
         }
 
-        public void addToQueue (Event evt)
+        public void addToQueue(Event evt)
         {
-            msgQueue.Add(evt);
-            List<Event> sortedList = msgQueue.OrderBy(o => o.MsgNumber).ToList();
-            msgQueue = sortedList;
+            string pubURL = evt.PublisherName;
+            List<Event> auxEvt = new List<Event>();
+            if(!msgQueueByPub.TryGetValue(pubURL, out auxEvt))
+            {
+                msgQueueByPub.Add(pubURL, new List<Event> { evt });
+            }
+            else
+            {
+                auxEvt.Add(evt);
+                auxEvt.OrderBy(o => o.MsgNumber).ToList();              
+            }
         }
 
-        public int LastMsgNumber{
-            get { return lastMsgNumber; }
-            set { lastMsgNumber = value; }
+        public int LastMsgNumber(string pubURL)
+        {
+            int lastMsgNumber;
+            if (!lastMsgNumberByPub.TryGetValue(pubURL, out lastMsgNumber))
+                return initLastMsgNumber;
+            return lastMsgNumber;           
         }
 
-        public List<Event> MsgQueue
+        public void UpdateLastMsgNumber(string pubURL)
         {
-            get { return msgQueue; }
+            int lastMsgNumber;
+            if (lastMsgNumberByPub.TryGetValue(pubURL, out lastMsgNumber))
+                lastMsgNumber++;
+            else
+                lastMsgNumberByPub.Add(pubURL, initLastMsgNumber++);
         }
+
+
+        public List<Event> MsgQueue(string pubURL)
+        {
+            List<Event> lst = new List<Event>();
+            if (msgQueueByPub.TryGetValue(pubURL, out lst))
+                return lst;
+            return null;
+        }
+
 
         public SubscriberInterface Sub
         {
             get { return sub; }
         }
 
-        internal void updateMsgQueue(List<Event> eventsToRemove)
+        public void updateMsgQueue(string pubURL, List<Event> eventsToRemove)
         {
-            foreach(Event e in eventsToRemove)
+            List<Event> lst = new List<Event>();
+            if (msgQueueByPub.TryGetValue(pubURL, out lst))
             {
-                msgQueue.Remove(e);
+                foreach (Event e in eventsToRemove)
+                {
+                    lst.Remove(e);
+                }
             }
-            
         }
     }
 }
