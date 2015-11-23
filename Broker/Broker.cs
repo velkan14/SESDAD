@@ -20,7 +20,9 @@ namespace Broker
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
         List<SubAux> subLastMsgReceived = new List<SubAux>();
-        Dictionary<string, List<SubAux>> subLastMsgReceivedByPub = new Dictionary<string, List<SubAux>>();
+
+        Dictionary<string, List<KeyValuePair<string, int>>> subLastMsgReceivedByPub = new Dictionary<string, List<KeyValuePair<string, int>>>();
+
         Dictionary<string, List<BrokerToBrokerInterface>> brokersByTopic = new Dictionary<string, List<BrokerToBrokerInterface>>();
         Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
 
@@ -83,9 +85,7 @@ namespace Broker
                         foreach (BrokerToBrokerInterface son in sons)
                         {
                             son.forwardEvent(this.url, evt);
-                            string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
-                            if (loggingLevel.Equals("full")) pm.notify(notification);
-                            Console.WriteLine(notification);
+                            notifyPM(evt);
                         }
                         
                     }
@@ -104,9 +104,7 @@ namespace Broker
                                     if (!broker.getURL().Equals(url))
                                     {
                                         broker.forwardEvent(this.url, evt);
-                                        string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
-                                        if (loggingLevel.Equals("full")) pm.notify(notification);
-                                        Console.WriteLine(notification);
+                                        notifyPM(evt);
                                     }
                                 }
                             }
@@ -385,6 +383,12 @@ namespace Broker
             }
         }
 
+        public void notifyPM(Event evt)
+        {
+            string notification = "BroEvent " + processName + ", " + evt.PublisherName + ", " + evt.Topic + ", " + evt.MsgNumber.ToString();
+            if (loggingLevel.Equals("full")) pm.notify(notification);
+            Console.WriteLine(notification);
+        }
         
         public void forwardDisinterest(string url, string topic)
         {
