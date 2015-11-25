@@ -21,8 +21,6 @@ namespace Broker
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
         List<SubAux> subLastMsgReceived = new List<SubAux>();
 
-        Dictionary<string, List<KeyValuePair<string, int>>> subLastMsgReceivedByPub = new Dictionary<string, List<KeyValuePair<string, int>>>();
-
         Dictionary<string, List<BrokerToBrokerInterface>> brokersByTopic = new Dictionary<string, List<BrokerToBrokerInterface>>();
         Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
 
@@ -81,7 +79,10 @@ namespace Broker
 
                     if (routing.Equals("flooding"))
                     {
-                        foreach (BrokerToBrokerInterface d in dad) d.forwardEvent(this.url,evt);
+                        foreach (BrokerToBrokerInterface d in dad)
+                        {
+                            d.forwardEvent(this.url, evt);
+                        }
                         foreach (BrokerToBrokerInterface son in sons)
                         {
                             son.forwardEvent(this.url, evt);
@@ -91,7 +92,6 @@ namespace Broker
                     }
                     else if (routing.Equals("filter"))
                     {
-
                         string keyTopic;
                         foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
                         {
@@ -103,59 +103,238 @@ namespace Broker
                                     
                                     if (!broker.getURL().Equals(url))
                                     {
+                                        
                                         broker.forwardEvent(this.url, evt);
                                         notifyPM(evt);
                                     }
                                 }
                             }
-                            
+                            else
+                            {
+
+                            }
                         }
                         
                     }
 
                     string topic;
-                    foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+                    string pubURL = evt.PublisherName;
+                    int msgNumber = evt.MsgNumber;
+                    string msgTopic = evt.Topic;
+
+                    //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nela por se tratar
+                    //dum topico ou subtopico que queira
+                    //Mas tambem ha a possibilidade de apesar de nao estar interessado directamente nesse topico/subtopico (porque nao subscreveu)
+                    //precisa de ser avisado relativamente ao numero de sequencia da mensagem. Isto acontece quando essa mensagem vem de um publisher
+                    //que publica mensagens dos topicos que o sub quer
+                    //no entanto é preciso ter cuidado com certas subtilezas. A ordem das operações é
+                    //1. entregar a mensagem (ou arquivar wtv) a todos os subs que a queiram (estão subscritos ao topico/subtopico)
+                    //2. registar aqueles que recebem (os que arquivam nao contam neste caso) a mensagem.
+                    //3. enviar a mensagem a todos os subs que nao receberam a mensagem e que tenham interesse nessa mensagem
+                    //mensagens podem ser postas numa fila caso nao se tenha recebido a anterior
+                    if (ordering == "FIFO")                    
+                    { 
+                        HashSet<string> subsWhoGotMessage = new HashSet<string>();
+                        Dictionary<string, List<SubscriberInterface>> subset = setOfTopics(msgTopic);
+                        foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subset)
+                        {                           
+                            topic = entry.Key;
+                            foreach (SubscriberInterface sub in entry.Value)
+                            {
+                                SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                                int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
+                                Console.WriteLine("******************************");
+                                Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                                Console.WriteLine("MSG TOPIC = " + msgTopic);
+                                Console.WriteLine("Msg Number = " + msgNumber);
+                                Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                                subAux.addTopicProvider(evt.Topic, evt.PublisherName);
+                                if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                                {
+                                    subAux.addPub(pubURL);
+                                    if (msgNumber == nextLastMsgNumber)
+                                    {
+                                        Console.WriteLine("entregar!!!!!!");
+                                        sub.deliverToSub(evt);
+                                        subAux.updateLastMsgNumber(pubURL);
+                                        flushMsgQueue(subAux, sub, pubURL, nextLastMsgNumber);
+                                        subsWhoGotMessage.Add(sub.getURL());
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("arquivar!!!!");
+                                        subAux.addToQueue(evt);
+                                    }
+                                }
+
+                            }
+                        }
+                        foreach (KeyValuePair<string, List<SubscriberInterface>> entry in setNonTopics(msgTopic))
+                        {
+                            topic = entry.Key;
+                            foreach (SubscriberInterface sub in entry.Value)
+                            {
+                                if (!subsWhoGotMessage.Contains(sub.getURL()))
+                                {
+                                    SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                                    int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
+                                    if (subAux.assertPub(pubURL))
+                                    {
+                                        if (msgNumber == nextLastMsgNumber)
+                                        {
+                                            Console.WriteLine("Entrei mas nao sou topico! Msg number = " + msgNumber);
+                                            subAux.updateLastMsgNumber(pubURL);
+                                            flushMsgQueue(subAux, sub, pubURL, nextLastMsgNumber);
+                                        }
+                                        else
+                                        {
+                                            subAux.addfilteredSeqNumber(pubURL, msgNumber);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                    else
                     {
+                        foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic) {
+                            topic = entry.Key;
+                            foreach (SubscriberInterface sub in entry.Value)
+                            {
+                                if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                                {
+                                    sub.deliverToSub(evt);
+                                }
+                            }
+
+                        }
+                    }
+
+                    /*foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+                    {
+                        
                         topic = entry.Key;
-                        if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                        Console.WriteLine("topico da tabela subscribersByTopic: " + topic);
+                        Console.WriteLine("TOPICO da mensagem recebida: " + evt.Topic);
+                        
+                        if (ordering == "FIFO")
                         {
                             foreach (SubscriberInterface sub in entry.Value)
                             {
-                                if (ordering == "FIFO")
+                                
+                                SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());                             
+                                int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
+                                Console.WriteLine("******************************");
+                                Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                                //adicionar quem é que está a enviar os topicos (mesmo que sejam topicos que o sub nao quer
+                                subAux.addTopicProvider(evt.Topic, evt.PublisherName);
+                                Console.WriteLine("Msg Number = " + msgNumber);
+                                Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                                if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
                                 {
-                                    string pubURL = evt.PublisherName;                                  
-                                    List<Event> eventsToRemove = new List<Event>();
-                                    SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
-                                    int nextLastMsgNumber = subAux.LastMsgNumber(pubURL) + 1;
-                                    if (evt.MsgNumber == nextLastMsgNumber)
+                                    
+                                    if (msgNumber == nextLastMsgNumber)
                                     {
+                                        Console.WriteLine("entrei!!!!!! Msg number = " + msgNumber);
                                         sub.deliverToSub(evt);
-                                        subAux.UpdateLastMsgNumber(pubURL);
-                                        if (subAux.MsgQueue(pubURL) != null)
-                                        {
-                                            foreach (Event pendingEvent in subAux.MsgQueue(pubURL))
-                                            {
-                                                if (pendingEvent.MsgNumber == nextLastMsgNumber)
-                                                {
-                                                    sub.deliverToSub(pendingEvent);
-                                                    subAux.UpdateLastMsgNumber(pubURL);
-                                                    eventsToRemove.Add(pendingEvent);
-                                                }
-                                            }
-                                            subAux.updateMsgQueue(pubURL, eventsToRemove);
-                                            eventsToRemove.Clear();
-                                        }
+                                        subAux.updateLastMsgNumber(pubURL);
+                                        flushMsgQueue(subAux, sub, pubURL, nextLastMsgNumber);
                                         
                                     }
                                     else
                                     {
+                                        Console.WriteLine("Nao entrei!!!!!! Msg number = " + msgNumber);
                                         subAux.addToQueue(evt);
                                     }
-                                } else sub.deliverToSub(evt);
+                                }
+                                else
+                                {
+                                    //se a mensagem que chega for de um publisher que nao é um fornecedor para aquele topico
+                                    //entao nao nos interessa pois so ia estragar os sequence numbers
+                                    if (!(subAux.getTopicProviders(topic).Contains(pubURL))) { continue; }
+                                    if (msgNumber == nextLastMsgNumber)
+                                    {
+                                        Console.WriteLine("Entrei mas nao sou topico! Msg number = " + msgNumber);
+                                        subAux.updateLastMsgNumber(pubURL);
+                                        flushMsgQueue(subAux, sub, pubURL, nextLastMsgNumber);
+                                    }
+                                    else
+                                    {
+                                        subAux.addfilteredSeqNumber(pubURL, msgNumber);
+                                    }
+                                }
                             }
                         }
+                        else {
+                            foreach (SubscriberInterface sub in entry.Value)
+                            {
+                                if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                                {
+                                    sub.deliverToSub(evt);
+                                }
+                            }
+
+                        }
+                    }*/
+                }
+            }
+        }
+
+        //subconjunto da tabela de topicos -> subs 
+        //escolhemos os subtopicos do topico do evento (e o proprio)
+        public Dictionary<string, List<SubscriberInterface>> setOfTopics(string topic)
+        {
+            Dictionary<string, List<SubscriberInterface>> result = new Dictionary<string, List<SubscriberInterface>>();
+            string topicKey;
+            foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+            {
+                topicKey = entry.Key;
+                List<SubscriberInterface> aux = new List<SubscriberInterface>();
+                if (topicKey.Equals(topic) || isSubtopicOf(topic, topicKey))
+                {
+                    result.Add(topicKey, entry.Value);
+                }               
+            }
+            return result;
+        }
+
+
+        public Dictionary<string, List<SubscriberInterface>> setNonTopics(string topic)
+        {
+            Dictionary<string, List<SubscriberInterface>> result = new Dictionary<string, List<SubscriberInterface>>();
+            string topicKey;
+            foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+            {
+                topicKey = entry.Key;
+                if (!(topicKey.Equals(topic) || isSubtopicOf(topic, topicKey)))
+                {
+                    result.Add(topicKey, entry.Value);
+                }
+            }
+            return result;
+        }
+
+
+        //quando recebemos um evento temos de verificar se nao ha eventos anteriormente recebidos que tiveram de ser guardados 
+        //porque nao tinha sido recebido um evento anterior. Se houver, temos de uns entregar ao sub
+        public void flushMsgQueue(SubAux subAux, SubscriberInterface sub, string pubURL, int nextLastMsgNumber)
+        {
+            if (subAux.msgQueue(pubURL) != null)
+            {
+                List<Event> eventsToRemove = new List<Event>();
+
+                foreach (Event pendingEvent in subAux.msgQueue(pubURL))
+                {
+                    if (pendingEvent.MsgNumber == nextLastMsgNumber)
+                    {
+                        sub.deliverToSub(pendingEvent);
+                        subAux.updateLastMsgNumber(pubURL);
+                        eventsToRemove.Add(pendingEvent);
                     }
                 }
+                subAux.updateMsgQueue(pubURL, eventsToRemove);
+                eventsToRemove.Clear();
             }
         }
 
@@ -280,6 +459,7 @@ namespace Broker
 
                 int index = 0;
                 bool topicRemoved = false;
+                List<SubscriberInterface> auxLst = new List<SubscriberInterface>();
                 foreach (SubscriberInterface sub in subscribersByTopic[topic])
                 {
                     if (sub.getURL().Equals(subscriberURL))
@@ -294,12 +474,12 @@ namespace Broker
                             subscribersByTopic[topic].RemoveAt(index);
                             return;
                         }
-                        
+                        SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                        subAux.updatePubs(topic);
                         break;
                     }
                     index++;
                 }
-
                 if (routing.Equals("filter") && topicRemoved)
                 {
                     if (!brokersByTopic.ContainsKey(topic))
@@ -355,7 +535,8 @@ namespace Broker
                     }
                 }
 
-            } else
+            }
+            else
             {
                 brokersByTopic.Add(topic, new List<BrokerToBrokerInterface> { interestedBroker });
 
@@ -513,7 +694,5 @@ namespace Broker
             }
             return stillInterestedTopics;
         }
-
-
     }
 }

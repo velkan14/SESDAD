@@ -13,10 +13,51 @@ namespace Broker
         int initLastMsgNumber = -1;
         Dictionary<string, List<Event>> msgQueueByPub = new Dictionary<string, List<Event>>();
         Dictionary<string, int> lastMsgNumberByPub = new Dictionary<string, int>();
+        //utilizado para registar os numeros de sequencia dos eventos que foram filtrados
+        Dictionary<string, List<int>> filteredSeqNumbers = new Dictionary<string, List<int>>();
+        Dictionary<string, HashSet<string>> topicsProvidersByTopic = new Dictionary<string, HashSet<string>>();
+        //conjunto dos publishers que publicam eventos de topicos a que o sub está subscrito
+        Dictionary<string, int> pubs = new Dictionary<string, int>();
 
         public SubAux(SubscriberInterface sub)
         {
             this.sub = sub;
+        }
+
+        public void addPub(string pubURL)
+        {
+            int i;
+            if(!pubs.TryGetValue(pubURL, out i))
+            {
+                pubs.Add(pubURL, 1);
+            }
+            else
+            {
+                pubs[pubURL]++;
+            }
+        }
+
+        public void updatePubs(string pubURL)
+        {
+            int i;
+            if (pubs.TryGetValue(pubURL, out i))
+            { 
+                pubs[pubURL]--;
+                if (pubs[pubURL] == 0)
+                {
+                    pubs.Remove(pubURL);
+                }
+            }
+            else
+            {
+                //do nothing. We never unsub a topic we havent subbed first
+            }
+        }
+
+        public bool assertPub(string pubURL)
+        {
+            int i;
+            return pubs.TryGetValue(pubURL, out i);
         }
 
         public void addToQueue(Event evt)
@@ -34,7 +75,7 @@ namespace Broker
             }
         }
 
-        public int LastMsgNumber(string pubURL)
+        public int lastMsgNumber(string pubURL)
         {
             int lastMsgNumber;
             if (!lastMsgNumberByPub.TryGetValue(pubURL, out lastMsgNumber))
@@ -42,17 +83,59 @@ namespace Broker
             return lastMsgNumber;           
         }
 
-        public void UpdateLastMsgNumber(string pubURL)
+        public void updateLastMsgNumber(string pubURL)
         {
             int lastMsgNumber;
+            int auxMsgNumber;
+            List<int> seqNumbers;
             if (lastMsgNumberByPub.TryGetValue(pubURL, out lastMsgNumber))
-                lastMsgNumber++;
+            {
+                lastMsgNumberByPub[pubURL]++;  
+                auxMsgNumber = lastMsgNumber++;
+              //  Console.WriteLine("updateLastMsgNumber: " + auxMsgNumber);
+            }
             else
-                lastMsgNumberByPub.Add(pubURL, initLastMsgNumber++);
+            {
+                initLastMsgNumber++;
+                lastMsgNumberByPub.Add(pubURL, initLastMsgNumber);
+                auxMsgNumber = initLastMsgNumber;
+              //  Console.WriteLine("updateLastMsgNumberINIT: " + initLastMsgNumber);
+            }
+            if (filteredSeqNumbers.TryGetValue(pubURL, out seqNumbers))
+            {
+                if (auxMsgNumber == seqNumbers.First())
+                {
+                    int cnt = 0;
+                    foreach(int i in seqNumbers)
+                    {
+                        if (auxMsgNumber == i)
+                        {
+                            int lastMsgNumber2;
+                            if (lastMsgNumberByPub.TryGetValue(pubURL, out lastMsgNumber2))
+                            {
+                                lastMsgNumberByPub[pubURL]++;
+                            }
+                            else
+                            {
+                                lastMsgNumberByPub.Add(pubURL, initLastMsgNumber++);
+                            }
+                            auxMsgNumber++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                        cnt++;
+                    }
+                    seqNumbers.RemoveRange(0, cnt);
+                }
+            }
+                
+
         }
 
 
-        public List<Event> MsgQueue(string pubURL)
+        public List<Event> msgQueue(string pubURL)
         {
             List<Event> lst = new List<Event>();
             if (msgQueueByPub.TryGetValue(pubURL, out lst))
@@ -66,6 +149,20 @@ namespace Broker
             get { return sub; }
         }
 
+        public void addfilteredSeqNumber(string pubURL, int seqN)
+        {
+            List<int> auxInt = new List<int>();
+            if (!filteredSeqNumbers.TryGetValue(pubURL, out auxInt))
+            {
+                filteredSeqNumbers.Add(pubURL, new List<int> { seqN });
+            }
+            else
+            {
+                auxInt.Add(seqN);
+                auxInt.OrderBy(o => o).ToList();
+            }
+        }
+
         public void updateMsgQueue(string pubURL, List<Event> eventsToRemove)
         {
             List<Event> lst = new List<Event>();
@@ -76,6 +173,32 @@ namespace Broker
                     lst.Remove(e);
                 }
             }
+        }
+
+        public void addTopicProvider(string topic, string pubURL)
+        {
+           
+            HashSet<string> hst = new HashSet<string>();
+            if (!topicsProvidersByTopic.TryGetValue(topic, out hst)){
+                HashSet<string> aux = new HashSet<string>();
+                aux.Add(topic);
+                topicsProvidersByTopic[topic] = aux;
+            }
+            else
+            {
+                hst.Add(topic);
+            }
+
+        }
+
+        public HashSet<string> getTopicProviders(string topic)
+        {
+            HashSet<string> hst = new HashSet<string>();
+            if (topicsProvidersByTopic.TryGetValue(topic, out hst))
+            {
+                return hst;
+            }
+            return new HashSet<string>();
         }
     }
 }

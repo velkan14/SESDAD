@@ -60,6 +60,7 @@ namespace CommonTypes
 
         public int MsgNumber {
             get { return msgNumber; }
+            set { msgNumber = value; }
         }
 
         public static bool operator ==(Event a, Event b)
