@@ -12,6 +12,7 @@ namespace Broker
     class Broker :  BrokerToBrokerInterface, PMBroker, BrokerSubscribeInterface, BrokerPublishInterface
     {
         string url;
+        int initLastMsgNumber = -1; //porque comecamos a numerar as mensagens em 0...
         private int numberFreezes = 0;
         private bool freezeFlag = false;
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
@@ -23,6 +24,12 @@ namespace Broker
 
         Dictionary<string, List<BrokerToBrokerInterface>> brokersByTopic = new Dictionary<string, List<BrokerToBrokerInterface>>();
         Dictionary<BrokerToBrokerInterface, List<string>> topicsProvidedByBroker = new Dictionary<BrokerToBrokerInterface, List<string>>();
+        Dictionary<Tuple<string, string>, List<int>> filteringTable = new Dictionary<Tuple<string, string>, List<int>>();
+        //estrutura para auxiliar a implementar comunicacao FIFO entre brokers. Ideia geniallll
+        //<<Broker,Pub>,Lista das mensagens pendentes>    
+        Dictionary<Tuple<string, string>, Tuple<int, List<Event>>> fifoBrokersMsgs = new Dictionary<Tuple<string, string>, Tuple<int, List<Event>>>();
+        Dictionary<string,int> lastMsgNumberByPub = new Dictionary<string, int>();
+        Dictionary<string, List<Event>> msgQueueByPub = new Dictionary<string, List<Event>>();
 
         List<Event> events = new List<Event>();
         string routing, ordering, loggingLevel;
@@ -69,8 +76,7 @@ namespace Broker
                 lock(this) numberFreezes++;
                 freezeEvent.WaitOne();
             }
-            lock (this)
-            {
+            lock (this) {
                 bool exists = false;
                 foreach (Event e in events) if (evt == e) exists = true;
                 if (!exists)
@@ -95,22 +101,96 @@ namespace Broker
                         string keyTopic;
                         foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
                         {
+                            
                             keyTopic = entry.Key;
                             if (keyTopic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, keyTopic))
                             {
-                                foreach (BrokerToBrokerInterface broker in entry.Value)
+                                
+                                List<BrokerToBrokerInterface> brokersOftopic = entry.Value;
+                                //brokers vizinhos que para um dado topico nao o recebem porque é filtrado
+                                // List<BrokerToBrokerInterface> neglectedBrokers = sons;
+                                //neglectedBrokers.AddRange(dad);
+                                List<BrokerToBrokerInterface> neglectedBrokers = new List<BrokerToBrokerInterface>();
+                                foreach (BrokerToBrokerInterface s in sons)
                                 {
-                                    
+                                    foreach(BrokerToBrokerInterface s2 in entry.Value)
+                                    {
+                                        if (s.getURL() != s2.getURL())
+                                            neglectedBrokers.Add(s);
+                                    }
+                                    if (entry.Value.Count == 0)
+                                        neglectedBrokers = sons;
+                                }
+                                foreach(BrokerToBrokerInterface d in dad)
+                                {
+                                    foreach (BrokerToBrokerInterface s2 in entry.Value)
+                                    {
+                                        if (d.getURL() != s2.getURL())
+                                            neglectedBrokers.Add(d);
+                                    }
+                                    if (entry.Value.Count == 0)
+                                        neglectedBrokers.AddRange(dad);
+                                }
+
+                                Console.WriteLine("TOPICO: " + evt.Topic);
+                                foreach (BrokerToBrokerInterface broker in brokersOftopic)
+                                {
                                     if (!broker.getURL().Equals(url))
                                     {
+                                        Console.WriteLine("broker do topico: " + broker.getURL());
+                                        //se para um dado tuplo <broker, pub> houver uma entrada na tabela filteredTable temos de modificar o 
+                                        //numero das mensagens antes das enviarmos (aplicam-se algumas regras nesta modificacao)
+                                        Tuple<string, string> tp = new Tuple<string, string>(broker.getURL(), evt.PublisherName);
+                                        List<int> auxLst = new List<int>();        
+                                        if (filteringTable.TryGetValue(tp, out auxLst))
+                                        {      
+                                            int counter = 0;
+                                            List<int> ll = auxLst;
+                                            foreach (int i in ll)
+                                            {
+                                                if (i > evt.MsgNumber) {
+                                                    
+                                                    break;
+                                                }
+                                                counter++;
+                                                
+                                            }
+                                            
+                                            evt.MsgNumber -= counter;
+                                        }
                                         
                                         broker.forwardEvent(this.url, evt);
                                         notifyPM(evt);
                                     }
                                 }
-                            }
-                            else
-                            {
+                                //se ha pelo menos um broker que foi filtrado temos de assinalar isto na tabela
+                                if (neglectedBrokers.Count>0)
+                                {
+                                    Console.WriteLine("a entrar na filtering table");
+
+                                    foreach (BrokerToBrokerInterface bb in neglectedBrokers)
+                                    {
+                                        Console.WriteLine("broker na filtering table: " + bb.getURL());
+
+                                        Tuple<string, string> tp = new Tuple<string, string>(bb.getURL(), evt.PublisherName);
+                                        List<int> auxLst = new List<int>();
+                                        if (!filteringTable.TryGetValue(tp, out auxLst))
+                                        {
+                                            filteringTable.Add(tp, new List<int> { evt.MsgNumber });
+                                            Console.WriteLine("adicionada entrada na filtering table");
+                                            Console.WriteLine("valor na filtering table: " + filteringTable[tp].First());
+                                        }
+                                        else
+                                        {
+                                            auxLst.Add(evt.MsgNumber);
+                                            auxLst.OrderBy(o => o).ToList();
+                                        }
+
+                                    }
+
+                                }
+
+
 
                             }
                         }
@@ -122,16 +202,15 @@ namespace Broker
                     int msgNumber = evt.MsgNumber;
                     string msgTopic = evt.Topic;
 
-                    //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nela por se tratar
-                    //dum topico ou subtopico que queira
+                    //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nela por se tratar dum topico ou subtopico que queira
                     //Mas tambem ha a possibilidade de apesar de nao estar interessado directamente nesse topico/subtopico (porque nao subscreveu)
                     //precisa de ser avisado relativamente ao numero de sequencia da mensagem. Isto acontece quando essa mensagem vem de um publisher
                     //que publica mensagens dos topicos que o sub quer
                     //no entanto é preciso ter cuidado com certas subtilezas. A ordem das operações é
-                    //1. entregar a mensagem (ou arquivar wtv) a todos os subs que a queiram (estão subscritos ao topico/subtopico)
+                    //1. entregar a mensagem (ou arquivar) a todos os subs que a queiram (estão subscritos ao topico/subtopico)
                     //2. registar aqueles que recebem (os que arquivam nao contam neste caso) a mensagem.
-                    //3. enviar a mensagem a todos os subs que nao receberam a mensagem e que tenham interesse nessa mensagem
-                    //mensagens podem ser postas numa fila caso nao se tenha recebido a anterior
+                    //3. enviar a mensagem (so o numero de msg) a todos os subs que nao receberam a mensagem e que tenham interesse nessa mensagem
+                    //mensagens sao postas numa fila caso nao se tenha recebido a anterior
                     if (ordering == "FIFO")                    
                     { 
                         HashSet<string> subsWhoGotMessage = new HashSet<string>();
@@ -145,13 +224,13 @@ namespace Broker
                                 int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
                                 Console.WriteLine("******************************");
                                 Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                                Console.WriteLine("PUBLISHER: " + pubURL);
                                 Console.WriteLine("MSG TOPIC = " + msgTopic);
                                 Console.WriteLine("Msg Number = " + msgNumber);
                                 Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
-                                subAux.addTopicProvider(evt.Topic, evt.PublisherName);
                                 if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
                                 {
-                                    subAux.addPub(pubURL);
+                                    subAux.addPub(pubURL, msgTopic);
                                     if (msgNumber == nextLastMsgNumber)
                                     {
                                         Console.WriteLine("entregar!!!!!!");
@@ -177,12 +256,17 @@ namespace Broker
                                 if (!subsWhoGotMessage.Contains(sub.getURL()))
                                 {
                                     SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
-                                    int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
                                     if (subAux.assertPub(pubURL))
                                     {
+                                        int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
                                         if (msgNumber == nextLastMsgNumber)
                                         {
-                                            Console.WriteLine("Entrei mas nao sou topico! Msg number = " + msgNumber);
+                                            Console.WriteLine("Entrei mas nao sou topico!");
+                                            Console.WriteLine("******************************");
+                                            Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                                            Console.WriteLine("PUBLISHER: " + pubURL);
+                                            Console.WriteLine("MSG TOPIC = " + msgTopic);
+                                            Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
                                             subAux.updateLastMsgNumber(pubURL);
                                             flushMsgQueue(subAux, sub, pubURL, nextLastMsgNumber);
                                         }
@@ -317,7 +401,7 @@ namespace Broker
 
 
         //quando recebemos um evento temos de verificar se nao ha eventos anteriormente recebidos que tiveram de ser guardados 
-        //porque nao tinha sido recebido um evento anterior. Se houver, temos de uns entregar ao sub
+        //porque nao tinha sido recebido um evento anterior. Se houver, temos de entrega-los ao sub
         public void flushMsgQueue(SubAux subAux, SubscriberInterface sub, string pubURL, int nextLastMsgNumber)
         {
             if (subAux.msgQueue(pubURL) != null)
@@ -434,8 +518,10 @@ namespace Broker
                         if (!entry.Value.Contains(topic))
                         {
                             foreach (string topicValue in entry.Value)
-                                if (isSubtopicOf(topic, topicValue)) return;
-
+                            {
+                                if (isSubtopicOf(topic, topicValue))
+                                    return;
+                            }
                             entry.Key.forwardInterest(this.url, topic);
                             Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + topic);
                             entry.Value.Add(topic);
@@ -511,9 +597,66 @@ namespace Broker
 
         public void publishEvent(Event newEvent)
         {
-            forwardEvent(this.url, newEvent);
-            Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
+            lock (this) {
+                if (ordering == "FIFO")
+                {
+                    List<BrokerToBrokerInterface> auxLst = new List<BrokerToBrokerInterface>();
+                    if(!brokersByTopic.TryGetValue(newEvent.Topic, out auxLst))
+                    {
+                        brokersByTopic.Add(newEvent.Topic, new List<BrokerToBrokerInterface>());
+                    }
+                    string pubURL = newEvent.PublisherName;
+                    int msgNumber = newEvent.MsgNumber;
+                    int aux;
+                    if (!lastMsgNumberByPub.TryGetValue(pubURL, out aux))
+                    {
+                        lastMsgNumberByPub.Add(pubURL, initLastMsgNumber);
+                        msgQueueByPub.Add(pubURL, new List<Event>());
+                    }
+
+                    if (lastMsgNumberByPub[pubURL] + 1 == msgNumber)
+                    {
+                        forwardEvent(this.url, newEvent);
+                        lastMsgNumberByPub[pubURL]++;
+                        Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
+                        flushPubMsgQueue(pubURL);
+                    }
+                    else
+                    {
+                        msgQueueByPub[pubURL].Add(newEvent);
+                        msgQueueByPub[pubURL].OrderBy(o => o.MsgNumber).ToList();
+                    }
+                }
+                else
+                {
+                    forwardEvent(this.url, newEvent);
+                    Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
+                }
+            }       
         }
+
+
+        public void flushPubMsgQueue(string pubURL)
+        {
+            foreach(Event evt in msgQueueByPub[pubURL])
+            {
+                List<Event> eventsToRemove = new List<Event>();
+                int nextLastMsgNumber = lastMsgNumberByPub[pubURL]++;
+                if (evt.MsgNumber == nextLastMsgNumber)
+                {
+                    forwardEvent(this.url, evt);
+                    lastMsgNumberByPub[pubURL]++;
+                    eventsToRemove.Add(evt);
+                    Console.WriteLine("Event Forwarded by Publisher: " + evt.PublisherName + ", topic: " + evt.Topic);
+                }
+                foreach (Event e in eventsToRemove)
+                {
+                    msgQueueByPub[pubURL].Remove(e);
+                }
+                eventsToRemove.Clear();
+            }
+        }
+
 
         public void forwardInterest(string url, string topic)
         {
@@ -521,17 +664,17 @@ namespace Broker
             BrokerToBrokerInterface interestedBroker = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
 
             List<BrokerToBrokerInterface> brokers;
-            brokersByTopic.TryGetValue(topic, out brokers);
-
-            if (brokersByTopic.ContainsKey(topic))
+            if(brokersByTopic.TryGetValue(topic, out brokers))
             {
-                foreach (BrokerToBrokerInterface broker in brokers)
-                {
-                    if (!broker.getURL().Equals(url))
+                if (brokers != null) { 
+                    foreach (BrokerToBrokerInterface broker in brokers)
                     {
-                        brokersByTopic[topic].Add(interestedBroker);
+                        if (!broker.getURL().Equals(url))
+                        {
+                            brokersByTopic[topic].Add(interestedBroker);
 
-                        forwardInterestAux(url, topic);
+                            forwardInterestAux(url, topic);
+                        }
                     }
                 }
 

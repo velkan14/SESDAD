@@ -15,49 +15,45 @@ namespace Broker
         Dictionary<string, int> lastMsgNumberByPub = new Dictionary<string, int>();
         //utilizado para registar os numeros de sequencia dos eventos que foram filtrados
         Dictionary<string, List<int>> filteredSeqNumbers = new Dictionary<string, List<int>>();
-        Dictionary<string, HashSet<string>> topicsProvidersByTopic = new Dictionary<string, HashSet<string>>();
-        //conjunto dos publishers que publicam eventos de topicos a que o sub está subscrito
-        Dictionary<string, int> pubs = new Dictionary<string, int>();
+
+        //conjunto dos publishers que publicam eventos de topicos a que o sub está subscrito (e respectivos topicos)
+        Dictionary<string, HashSet<string>> pubsAux = new Dictionary<string, HashSet<string>>();
 
         public SubAux(SubscriberInterface sub)
         {
             this.sub = sub;
         }
 
-        public void addPub(string pubURL)
+        public void addPub(string pubURL, string msgTopic)
         {
-            int i;
-            if(!pubs.TryGetValue(pubURL, out i))
+            HashSet<string> auxHst;
+            if(pubsAux.TryGetValue(pubURL, out auxHst))
             {
-                pubs.Add(pubURL, 1);
+                auxHst.Add(msgTopic);
             }
             else
             {
-                pubs[pubURL]++;
+                pubsAux.Add(pubURL, new HashSet<string>(){ msgTopic });
             }
         }
 
-        public void updatePubs(string pubURL)
+        public void updatePubs(string topic)
         {
-            int i;
-            if (pubs.TryGetValue(pubURL, out i))
-            { 
-                pubs[pubURL]--;
-                if (pubs[pubURL] == 0)
-                {
-                    pubs.Remove(pubURL);
-                }
-            }
-            else
+            foreach(KeyValuePair<string, HashSet<string>> entry in pubsAux)
             {
-                //do nothing. We never unsub a topic we havent subbed first
+                entry.Value.Remove(topic);
             }
         }
 
         public bool assertPub(string pubURL)
         {
-            int i;
-            return pubs.TryGetValue(pubURL, out i);
+            HashSet<string> auxHst;
+            if (pubsAux.TryGetValue(pubURL, out auxHst))
+            {
+                if (auxHst.Count == 0) return false;
+                return true;
+            }
+            return false; ;
         }
 
         public void addToQueue(Event evt)
@@ -91,15 +87,13 @@ namespace Broker
             if (lastMsgNumberByPub.TryGetValue(pubURL, out lastMsgNumber))
             {
                 lastMsgNumberByPub[pubURL]++;  
-                auxMsgNumber = lastMsgNumber++;
-              //  Console.WriteLine("updateLastMsgNumber: " + auxMsgNumber);
+                auxMsgNumber = lastMsgNumberByPub[pubURL];
             }
             else
             {
-                initLastMsgNumber++;
-                lastMsgNumberByPub.Add(pubURL, initLastMsgNumber);
-                auxMsgNumber = initLastMsgNumber;
-              //  Console.WriteLine("updateLastMsgNumberINIT: " + initLastMsgNumber);
+                auxMsgNumber = initLastMsgNumber + 1;
+                lastMsgNumberByPub.Add(pubURL, auxMsgNumber);
+                
             }
             if (filteredSeqNumbers.TryGetValue(pubURL, out seqNumbers))
             {
@@ -173,32 +167,6 @@ namespace Broker
                     lst.Remove(e);
                 }
             }
-        }
-
-        public void addTopicProvider(string topic, string pubURL)
-        {
-           
-            HashSet<string> hst = new HashSet<string>();
-            if (!topicsProvidersByTopic.TryGetValue(topic, out hst)){
-                HashSet<string> aux = new HashSet<string>();
-                aux.Add(topic);
-                topicsProvidersByTopic[topic] = aux;
-            }
-            else
-            {
-                hst.Add(topic);
-            }
-
-        }
-
-        public HashSet<string> getTopicProviders(string topic)
-        {
-            HashSet<string> hst = new HashSet<string>();
-            if (topicsProvidersByTopic.TryGetValue(topic, out hst))
-            {
-                return hst;
-            }
-            return new HashSet<string>();
         }
     }
 }
