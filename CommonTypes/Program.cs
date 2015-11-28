@@ -81,6 +81,47 @@ namespace CommonTypes
         }
 
     }
-    
+
+    public class SameSubscriberComparer : EqualityComparer<SubscriberInterface>
+    {
+        public override bool Equals(SubscriberInterface s1, SubscriberInterface s2)
+        {
+            return s1.getURL() == s2.getURL();
+        }
+
+
+        public override int GetHashCode(SubscriberInterface s)
+        {
+            return base.GetHashCode();
+        }
+    }
+
+    public class SameBrokerComparar : IEqualityComparer<BrokerToBrokerInterface>
+    {
+        public int GetHashCode(BrokerToBrokerInterface co)
+        {
+            if (co == null)
+            {
+                return 0;
+            }
+            return co.getURL().GetHashCode();
+        }
+
+        public bool Equals(BrokerToBrokerInterface x1, BrokerToBrokerInterface x2)
+        {
+            if (object.ReferenceEquals(x1, x2))
+            {
+                return true;
+            }
+            if (object.ReferenceEquals(x1, null) ||
+                object.ReferenceEquals(x2, null))
+            {
+                return false;
+            }
+            return x1.getURL() == x2.getURL();
+        }
+    }
+
+
 
 }

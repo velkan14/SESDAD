@@ -17,29 +17,30 @@ namespace Broker
         Dictionary<string, List<int>> filteredSeqNumbers = new Dictionary<string, List<int>>();
 
         //conjunto dos publishers que publicam eventos de topicos a que o sub está subscrito (e respectivos topicos)
-        Dictionary<string, HashSet<string>> pubsAux = new Dictionary<string, HashSet<string>>();
+      //  Dictionary<string, HashSet<string>> pubs = new Dictionary<string, HashSet<string>>();
 
         public SubAux(SubscriberInterface sub)
         {
             this.sub = sub;
         }
 
-        public void addPub(string pubURL, string msgTopic)
+      /*  public void addPub(string pubURL, string msgTopic)
         {
             HashSet<string> auxHst;
-            if(pubsAux.TryGetValue(pubURL, out auxHst))
+            if(pubs.TryGetValue(pubURL, out auxHst))
             {
-                auxHst.Add(msgTopic);
+                if(!auxHst.Contains(msgTopic))
+                    auxHst.Add(msgTopic);
             }
             else
             {
-                pubsAux.Add(pubURL, new HashSet<string>(){ msgTopic });
+                pubs.Add(pubURL, new HashSet<string>(){ msgTopic });
             }
         }
 
         public void updatePubs(string topic)
         {
-            foreach(KeyValuePair<string, HashSet<string>> entry in pubsAux)
+            foreach(KeyValuePair<string, HashSet<string>> entry in pubs)
             {
                 entry.Value.Remove(topic);
             }
@@ -48,14 +49,27 @@ namespace Broker
         public bool assertPub(string pubURL)
         {
             HashSet<string> auxHst;
-            if (pubsAux.TryGetValue(pubURL, out auxHst))
+            if (pubs.TryGetValue(pubURL, out auxHst))
             {
                 if (auxHst.Count == 0) return false;
                 return true;
             }
-            return false; ;
+            return false; 
         }
 
+        //sees if, for a specific publisher, the sub is subscribed to more topics from that pub
+        public bool assertMoreTopics(string pubURL, string topic)
+        {
+            HashSet<string> auxHst;
+            if (pubs.TryGetValue(pubURL, out auxHst))
+            {
+                HashSet<string> tempHst = auxHst;
+                tempHst.Remove(topic);
+                if (tempHst.Count > 0) return true;
+            }
+            return false;
+        }
+        */
         public void addToQueue(Event evt)
         {
             string pubURL = evt.PublisherName;
