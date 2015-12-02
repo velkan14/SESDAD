@@ -13,6 +13,7 @@ namespace Broker
     {
         string url;
         int initLastMsgNumber = -1; //porque comecamos a numerar as mensagens em 0...
+        int initSequencerNumber = -1;
         private int numberFreezes = 0;
         private bool freezeFlag = false;
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
@@ -32,11 +33,17 @@ namespace Broker
         Dictionary<string, List<Event>> msgQueueByPub = new Dictionary<string, List<Event>>();
         Dictionary<string, HashSet<string>> topicsByPub = new Dictionary<string, HashSet<string>>();
 
+        //to store the messages until they can by TO-delivered 
+        Dictionary<Tuple<string, int>, Event> holdBackQueueByTopic = new Dictionary<Tuple<string, int>, Event>();
+       //just for the sequencer
+       Dictionary<string, int> seqNumberByTopic = new Dictionary<string, int>();
+        BrokerToBrokerInterface root;
+        string rootURL = null;
+
         List<Event> events = new List<Event>();
         string routing, ordering, loggingLevel;
         string processName;
         NotificationReceiver pm;
-       
 
         public Broker(NotificationReceiver pm, string processName, string routing, string ordering, string loggingLevel)
         {
@@ -80,7 +87,7 @@ namespace Broker
             }
             return false;
         }
-
+        //os topicos que um certo pub publica. É actualizada sempre que se recebe uma mensagem
         public void addToPubsByTopic(string pubURL, string msgTopic)
         {
             HashSet<string> auxHst;
@@ -93,7 +100,7 @@ namespace Broker
                 topicsByPub.Add(pubURL, new HashSet<string>() { msgTopic });
             }
         }
-
+        //verifica se o sub está subscrito a outros topicos para alem de msgTopic publicados por pubURL
         public bool assertSubscription(string pubURL, string msgTopic, string subURL)
         {
             foreach(KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
@@ -113,14 +120,324 @@ namespace Broker
             }
             return false;
         }
+        //ve se o sub esta subscrito a outros topicos para alem de msgTopic
+        public bool assertTopicsSubbed(string subURL, string msgTopic)
+        {
+            foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+            {
+                string topicKey = entry.Key;
+                if (!(topicKey.Equals(msgTopic) || isSubtopicOf(msgTopic, topicKey)))
+                {
+                    foreach (SubscriberInterface s in entry.Value)
+                    {
+                        if (s.getURL() == subURL)
+                            return true;
+                    }    
+                }
+            }
+            return false;
+        }
 
         public void deliverToSub(string url, Event evt)
         {
-            
+            string topic;
+            string pubURL = evt.PublisherName;
+            int msgNumber = evt.MsgNumber;
+            string msgTopic = evt.Topic;
+
+            //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nela por se tratar dum topico ou subtopico que queira
+            //Mas tambem ha a possibilidade de apesar de nao estar interessado directamente nesse topico/subtopico (porque nao subscreveu)
+            //precisa de ser avisado relativamente ao numero de sequencia da mensagem. Isto acontece quando essa mensagem vem de um publisher
+            //que publica mensagens dos topicos que o sub quer
+            //no entanto é preciso ter cuidado com certas subtilezas. A ordem das operações é
+            //1. entregar a mensagem (ou arquivar) a todos os subs que a queiram (estão subscritos ao topico/subtopico)
+            //2. registar aqueles que recebem (os que arquivam nao contam neste caso) a mensagem.
+            //3. enviar a mensagem (so o numero de msg) a todos os subs que nao receberam a mensagem e que tenham interesse nessa mensagem
+            //mensagens sao postas numa fila caso nao se tenha recebido a anterior
+            if (ordering == "FIFO")
+            {
+                Console.WriteLine("******************************");
+                Console.WriteLine("FIFOing IT OUT!");
+                addToPubsByTopic(pubURL, msgTopic);
+                HashSet<string> subsWhoGotMessage = new HashSet<string>();
+                List<SubscriberInterface> subset = new List<SubscriberInterface>();
+                subset = setOfTopics(msgTopic);
+                foreach (SubscriberInterface y in subset)
+                {
+                    Console.WriteLine("subset member: " + y);
+                }
+                foreach (SubscriberInterface sub in subset)
+                {
+                    SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                    int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
+
+                    Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                    Console.WriteLine("PUBLISHER: " + pubURL);
+                    Console.WriteLine("MSG TOPIC = " + msgTopic);
+                    Console.WriteLine("Msg Number = " + evt.MsgNumber);
+                    Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                    if (msgNumber == nextLastMsgNumber)
+                    {
+                        Console.WriteLine("entregar!!!!!!");
+                        sub.deliverToSub(evt);
+                        subAux.updateLastMsgNumber(pubURL);
+                        flushMsgQueue(subAux, sub, pubURL);
+                        //para nao entregarmos a mesma mensagem duas vezes caso o sub esteja subscrito ao topico e a um
+                        //hipertopico
+                        subsWhoGotMessage.Add(sub.getURL());
+                    }
+                    else
+                    {
+                        Console.WriteLine("arquivar!!!!");
+                        subAux.addToQueue(evt);
+                    }
+                }
+
+                subset = setNonTopics(msgTopic);
+                foreach (SubscriberInterface ss in subset)
+                {
+                    //se ja recebeu nao interessa mais. Evitar que seja entregue a mesma msg duas vezes ao mesmo sub
+                    if (!subsWhoGotMessage.Contains(ss.getURL()))
+                    {
+                        SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == ss.getURL());
+                        //verificar se o topico interessa ao sub
+
+                        if (assertSubscription(pubURL, msgTopic, ss.getURL()))
+                        {
+                            int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
+                            if (msgNumber == nextLastMsgNumber)
+                            {
+                                Console.WriteLine("Entrei mas nao sou topico!");
+                                Console.WriteLine("******************************");
+                                Console.WriteLine("SUBSCRIBER: " + ss.getURL());
+                                Console.WriteLine("PUBLISHER: " + pubURL);
+                                Console.WriteLine("MSG TOPIC = " + msgTopic);
+                                Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                                subAux.updateLastMsgNumber(pubURL);
+                                flushMsgQueue(subAux, ss, pubURL);
+                            }
+                            else
+                            {
+                                subAux.addfilteredSeqNumber(pubURL, msgNumber);
+                            }
+                        }
+                    }
+
+                }
+                Console.WriteLine("ENDING FIFO");
+            }
+            else if (ordering == "TOTAL")
+            {
+                Console.WriteLine("******************************");
+                Console.WriteLine("TOTALing IT OUT!");
+                HashSet<string> subsWhoGotMessage = new HashSet<string>();
+                List<SubscriberInterface> subset = new List<SubscriberInterface>();
+                subset = setOfTopics(msgTopic);
+                foreach (SubscriberInterface y in subset)
+                {
+                    Console.WriteLine("subset member: " + y);
+                }
+                foreach (SubscriberInterface sub in subset)
+                {
+                    SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                    int nextLastMsgNumber = subAux.lastMsgNumber(msgTopic) + 1;
+
+                    Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                    Console.WriteLine("PUBLISHER: " + pubURL);
+                    Console.WriteLine("MSG TOPIC = " + msgTopic);
+                    Console.WriteLine("Msg Number = " + evt.MsgNumber);
+                    Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                    if (msgNumber == nextLastMsgNumber)
+                    {
+                        Console.WriteLine("entregar!!!!!!");
+                        sub.deliverToSub(evt);
+                        subAux.updateLastMsgNumber(msgTopic);
+                        flushMsgQueueTopic(subAux, sub, msgTopic);
+                        //para nao entregarmos a mesma mensagem duas vezes caso o sub esteja subscrito ao topico e a um
+                        //hipertopico
+                        subsWhoGotMessage.Add(sub.getURL());
+                    }
+                    else
+                    {
+                        Console.WriteLine("arquivar!!!!");
+                        subAux.addToQueueTopic(evt);
+                    }
+                }
+
+                subset = setNonTopics(msgTopic);
+
+                foreach (SubscriberInterface ss in subset)
+                {
+                    if (!subsWhoGotMessage.Contains(ss.getURL()))
+                    {
+                        SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == ss.getURL());
+                        if (assertTopicsSubbed(ss.getURL(), msgTopic))
+                        {
+                            int nextLastMsgNumber = subAux.lastMsgNumber(msgTopic) + 1;
+                            if (msgNumber == nextLastMsgNumber)
+                            {
+                                Console.WriteLine("Entrei mas nao sou topico!");
+                                Console.WriteLine("******************************");
+                                Console.WriteLine("SUBSCRIBER: " + ss.getURL());
+                                Console.WriteLine("PUBLISHER: " + pubURL);
+                                Console.WriteLine("MSG TOPIC = " + msgTopic);
+                                Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                                subAux.updateLastMsgNumber(msgTopic);
+                                flushMsgQueueTopic(subAux, ss, msgTopic);
+                            }
+                            else
+                            {
+                                subAux.addfilteredSeqNumber(pubURL, msgNumber);
+                            }
+                        }
+                    }
+
+                }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+                {
+                    topic = entry.Key;
+                    foreach (SubscriberInterface sub in entry.Value)
+                    {
+                        if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                        {
+                            sub.deliverToSub(evt);
+                        }
+                    }
+
+                }
+            }
+
         }
 
         public void forwardToBroker(string url, Event evt)
         {
+            if (routing.Equals("flooding"))
+            {
+                foreach (BrokerToBrokerInterface d in dad)
+                {
+                    d.forwardEvent(this.url, evt);
+                }
+                foreach (BrokerToBrokerInterface son in sons)
+                {
+                    son.forwardEvent(this.url, evt);
+                    notifyPM(evt);
+                }
+
+            }
+            else if (routing.Equals("filter"))
+            {
+                Console.WriteLine("FILTERING!!!!!!!!!!!!!!!!!!!!");
+                Console.WriteLine("MSG TOPIC: " + evt.Topic);
+                Console.WriteLine("MSG NUMBER: " + evt.MsgNumber);
+                Console.WriteLine("Broker who sended this: " + url);
+                Console.WriteLine("Publisher: " + evt.PublisherName);
+                int msgNumberCopy = evt.MsgNumber;
+                Console.WriteLine("MSG NUMBER COPY: " + msgNumberCopy);
+                string keyTopic;
+                HashSet<string> brokersURLWhoGotMsg = new HashSet<string>();
+                HashSet<string> brokersWhoWereNeglected = new HashSet<string>();
+                foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
+                {
+                    keyTopic = entry.Key;
+                    if (keyTopic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, keyTopic))
+                    {
+
+                        List<BrokerToBrokerInterface> brokersOftopic = new List<BrokerToBrokerInterface>();
+                        if (entry.Value != null)
+                            brokersOftopic = entry.Value;
+                        //brokers vizinhos que para um dado topico nao o recebem porque é filtrado
+                        List<BrokerToBrokerInterface> neglectedBrokers = new List<BrokerToBrokerInterface>();
+                        List<BrokerToBrokerInterface> auxLst2 = sons;
+                        auxLst2.AddRange(dad);
+                        neglectedBrokers = auxLst2.Except(brokersOftopic, new SameBrokerComparer()).ToList();
+
+                        foreach (BrokerToBrokerInterface sss in neglectedBrokers)
+                        {
+                            Console.WriteLine("neglectedBroker: " + sss.getURL());
+                        }
+
+                        if (neglectedBrokers.Count == 0)
+                            Console.WriteLine("neglectedBrokers vazios");
+
+                        Console.WriteLine("TOPICO: " + evt.Topic);
+
+                        foreach (BrokerToBrokerInterface broker in entry.Value)
+                        {
+                            if (!broker.getURL().Equals(url))
+                            {
+                                if (!brokersURLWhoGotMsg.Contains(broker.getURL()) && !brokersWhoWereNeglected.Contains(broker.getURL()))
+                                {
+                                    Event modMsg = new Event(evt.PublisherName, evt.Topic, evt.Content, evt.MsgNumber);
+                                    //se para um dado tuplo <broker, pub> houver uma entrada na tabela filteredTable temos de modificar o 
+                                    //numero das mensagens antes das enviarmos (aplicam-se algumas regras nesta modificacao)
+                                    Console.WriteLine("enviar a mensagem para o broker: " + broker.getURL());
+                                    Tuple<string, string> tp = new Tuple<string, string>(broker.getURL(), evt.PublisherName);
+                                    List<int> auxLst = new List<int>();
+                                    if (filteringTable.TryGetValue(tp, out auxLst))
+                                    {
+                                        int counter = 0;
+                                        List<int> ll = auxLst;
+                                        foreach (int i in ll)
+                                        {
+                                            Console.WriteLine("valor na filtering table: " + i);
+                                            if (i > evt.MsgNumber)
+                                            {
+                                                break;
+                                            }
+                                            counter++;
+
+                                        }
+                                        Console.WriteLine("valor do counter: " + counter);
+                                        modMsg.MsgNumber -= counter;
+                                        Console.WriteLine("Modifiquei a msg" + evt.Topic);
+                                        Console.WriteLine("Novo msg number é: " + msgNumberCopy);
+                                    }
+                                    broker.forwardEvent(this.url, modMsg);
+                                    brokersURLWhoGotMsg.Add(broker.getURL());
+                                    notifyPM(evt);
+                                }
+                            }
+                        }
+                        //se ha pelo menos um broker que foi filtrado temos de assinalar isto na tabela
+                        if (neglectedBrokers.Any())
+                        {
+                            foreach (BrokerToBrokerInterface bb in neglectedBrokers)
+                            {
+                                if (!bb.getURL().Equals(url))
+                                {
+                                    if (!brokersWhoWereNeglected.Contains(bb.getURL()) && !brokersURLWhoGotMsg.Contains(bb.getURL()))
+                                    {
+                                        Console.WriteLine("broker na filtering table: " + bb.getURL());
+
+                                        Tuple<string, string> tp = new Tuple<string, string>(bb.getURL(), evt.PublisherName);
+                                        List<int> auxLst = new List<int>();
+                                        if (!filteringTable.TryGetValue(tp, out auxLst))
+                                        {
+                                            filteringTable.Add(tp, new List<int> { evt.MsgNumber });
+                                            Console.WriteLine("adicionada entrada na filtering table");
+                                            foreach (int ii in filteringTable[tp])
+                                            {
+                                                Console.WriteLine("valor na filtering table: " + ii);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            auxLst.Add(evt.MsgNumber);
+                                            Console.WriteLine("adicionado valor na filtering table: " + evt.MsgNumber);
+                                            auxLst.OrderBy(o => o).ToList();
+                                        }
+                                        brokersWhoWereNeglected.Add(bb.getURL());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
 
         }
 
@@ -137,231 +454,8 @@ namespace Broker
                 if (!exists)
                 {
                     events.Add(evt);
-                    string topic;
-                    string pubURL = evt.PublisherName;
-                    int msgNumber = evt.MsgNumber;
-                    string msgTopic = evt.Topic;
-
-                    //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nela por se tratar dum topico ou subtopico que queira
-                    //Mas tambem ha a possibilidade de apesar de nao estar interessado directamente nesse topico/subtopico (porque nao subscreveu)
-                    //precisa de ser avisado relativamente ao numero de sequencia da mensagem. Isto acontece quando essa mensagem vem de um publisher
-                    //que publica mensagens dos topicos que o sub quer
-                    //no entanto é preciso ter cuidado com certas subtilezas. A ordem das operações é
-                    //1. entregar a mensagem (ou arquivar) a todos os subs que a queiram (estão subscritos ao topico/subtopico)
-                    //2. registar aqueles que recebem (os que arquivam nao contam neste caso) a mensagem.
-                    //3. enviar a mensagem (so o numero de msg) a todos os subs que nao receberam a mensagem e que tenham interesse nessa mensagem
-                    //mensagens sao postas numa fila caso nao se tenha recebido a anterior
-                    if (ordering == "FIFO")
-                    {
-                        Console.WriteLine("******************************");
-                        Console.WriteLine("FIFOing IT OUT!");
-                        addToPubsByTopic(pubURL, msgTopic);
-                        HashSet<string> subsWhoGotMessage = new HashSet<string>();
-                        List<SubscriberInterface> subset = new List<SubscriberInterface>();                        
-                        subset = setOfTopics(msgTopic);
-                        foreach(SubscriberInterface y in subset) {
-                            Console.WriteLine("subset member: " + y); }
-                        foreach (SubscriberInterface sub in subset)
-                        {
-                            SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
-                            int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
-                            
-                            Console.WriteLine("SUBSCRIBER: " + sub.getURL());
-                            Console.WriteLine("PUBLISHER: " + pubURL);
-                            Console.WriteLine("MSG TOPIC = " + msgTopic);
-                            Console.WriteLine("Msg Number = " + evt.MsgNumber);
-                            Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
-                            if (msgNumber == nextLastMsgNumber)
-                            {
-                                Console.WriteLine("entregar!!!!!!");
-                                sub.deliverToSub(evt);
-                                subAux.updateLastMsgNumber(pubURL);
-                                flushMsgQueue(subAux, sub, pubURL, nextLastMsgNumber);
-                                //para nao entregarmos a mesma mensagem duas vezes caso o sub esteja subscrito ao topico e a um
-                                //hipertopico
-                                subsWhoGotMessage.Add(sub.getURL());
-                            }
-                            else
-                            {
-                                Console.WriteLine("arquivar!!!!");
-                                subAux.addToQueue(evt);
-                            }                         
-                        }
-                       
-                        subset = setNonTopics(msgTopic);
-                        foreach (SubscriberInterface y in subset) { Console.WriteLine("nonTOpic member: " + y.getURL()); }
-
-                        foreach (SubscriberInterface ss in subset)
-                        {
-                            if (!subsWhoGotMessage.Contains(ss.getURL()))
-                            {
-                                SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == ss.getURL());
-                                if (assertSubscription(pubURL, msgTopic, ss.getURL()))
-                                {
-                                    int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
-                                    if (msgNumber == nextLastMsgNumber)
-                                    {
-                                        Console.WriteLine("Entrei mas nao sou topico!");
-                                        Console.WriteLine("******************************");
-                                        Console.WriteLine("SUBSCRIBER: " + ss.getURL());
-                                        Console.WriteLine("PUBLISHER: " + pubURL);
-                                        Console.WriteLine("MSG TOPIC = " + msgTopic);
-                                        Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
-                                        subAux.updateLastMsgNumber(pubURL);
-                                        flushMsgQueue(subAux, ss, pubURL, nextLastMsgNumber);
-                                    }
-                                    else
-                                    {
-                                        subAux.addfilteredSeqNumber(pubURL, msgNumber);
-                                    }
-                                }
-                            }
-                            
-                        }
-                        Console.WriteLine("ENDING FIFO");
-                    }
-                    else
-                    {
-                        foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
-                        {
-                            topic = entry.Key;
-                            foreach (SubscriberInterface sub in entry.Value)
-                            {
-                                if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
-                                {
-                                    sub.deliverToSub(evt);
-                                }
-                            }
-
-                        }
-                    }
-                    if (routing.Equals("flooding"))
-                    {
-                        foreach (BrokerToBrokerInterface d in dad)
-                        {
-                            d.forwardEvent(this.url, evt);
-                        }
-                        foreach (BrokerToBrokerInterface son in sons)
-                        {
-                            son.forwardEvent(this.url, evt);
-                            notifyPM(evt);
-                        }
-                        
-                    }
-                    else if (routing.Equals("filter"))
-                    {
-                        Console.WriteLine("FILTERING!!!!!!!!!!!!!!!!!!!!");
-                        Console.WriteLine("MSG TOPIC: " + evt.Topic);
-                        Console.WriteLine("MSG NUMBER: " + evt.MsgNumber);
-                        Console.WriteLine("Broker who sended this: " + url);
-                        Console.WriteLine("Publisher: " + evt.PublisherName);
-                        int msgNumberCopy = evt.MsgNumber;
-                        Console.WriteLine("MSG NUMBER COPY: " + msgNumberCopy);
-                        string keyTopic;
-                        HashSet<string> brokersURLWhoGotMsg = new HashSet<string>();
-                        HashSet<string> brokersWhoWereNeglected = new HashSet<string>();
-                        foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
-                        {                           
-                            keyTopic = entry.Key;
-                            if (keyTopic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, keyTopic))
-                            {
-                                
-                                List<BrokerToBrokerInterface> brokersOftopic = new List<BrokerToBrokerInterface>();
-                                if(entry.Value!=null)
-                                    brokersOftopic = entry.Value;
-                                //brokers vizinhos que para um dado topico nao o recebem porque é filtrado
-                                List<BrokerToBrokerInterface> neglectedBrokers = new List<BrokerToBrokerInterface>();
-                                List<BrokerToBrokerInterface> auxLst2 = sons;
-                                auxLst2.AddRange(dad);                           
-                                neglectedBrokers = auxLst2.Except(brokersOftopic, new SameBrokerComparar()).ToList();   
-
-                                foreach (BrokerToBrokerInterface sss in neglectedBrokers)
-                                {
-                                    Console.WriteLine("neglectedBroker: " + sss.getURL());
-                                }
-
-                                if (neglectedBrokers.Count==0)
-                                    Console.WriteLine("neglectedBrokers vazios");
-
-                                Console.WriteLine("TOPICO: " + evt.Topic);
-                                
-                                foreach (BrokerToBrokerInterface broker in entry.Value)
-                                {
-                                    if (!broker.getURL().Equals(url))
-                                    {
-                                        if (!brokersURLWhoGotMsg.Contains(broker.getURL()) && !brokersWhoWereNeglected.Contains(broker.getURL()))
-                                        {
-                                            Event modMsg = new Event(evt.PublisherName, evt.Topic, evt.Content, evt.MsgNumber);
-                                            //se para um dado tuplo <broker, pub> houver uma entrada na tabela filteredTable temos de modificar o 
-                                            //numero das mensagens antes das enviarmos (aplicam-se algumas regras nesta modificacao)
-                                            Console.WriteLine("enviar a mensagem para o broker: " + broker.getURL());
-                                            Tuple<string, string> tp = new Tuple<string, string>(broker.getURL(), evt.PublisherName);
-                                            List<int> auxLst = new List<int>();
-                                            if (filteringTable.TryGetValue(tp, out auxLst))
-                                            {
-                                                int counter = 0;
-                                                List<int> ll = auxLst;
-                                                foreach (int i in ll)
-                                                {
-                                                    Console.WriteLine("valor na filtering table: " + i);
-                                                    if (i > evt.MsgNumber)
-                                                    {
-                                                        break;
-                                                    }
-                                                    counter++;
-
-                                                }
-                                                Console.WriteLine("valor do counter: " + counter);
-                                                modMsg.MsgNumber -= counter;
-                                                Console.WriteLine("Modifiquei a msg" + evt.Topic);
-                                                Console.WriteLine("Novo msg number é: " + msgNumberCopy);
-                                            }
-                                            broker.forwardEvent(this.url, modMsg);
-                                            brokersURLWhoGotMsg.Add(broker.getURL());
-                                            notifyPM(evt);
-                                        }
-                                    }
-                                }
-                                //se ha pelo menos um broker que foi filtrado temos de assinalar isto na tabela
-                                if (neglectedBrokers.Any())
-                                {
-                                    foreach (BrokerToBrokerInterface bb in neglectedBrokers)
-                                    {
-                                        if (!bb.getURL().Equals(url))
-                                        {
-                                            if (!brokersWhoWereNeglected.Contains(bb.getURL()) && !brokersURLWhoGotMsg.Contains(bb.getURL()))
-                                            {
-                                                Console.WriteLine("broker na filtering table: " + bb.getURL());
-
-                                                Tuple<string, string> tp = new Tuple<string, string>(bb.getURL(), evt.PublisherName);
-                                                List<int> auxLst = new List<int>();
-                                                if (!filteringTable.TryGetValue(tp, out auxLst))
-                                                {
-                                                    filteringTable.Add(tp, new List<int> { evt.MsgNumber });
-                                                    Console.WriteLine("adicionada entrada na filtering table");
-                                                    foreach (int ii in filteringTable[tp])
-                                                    {
-                                                        Console.WriteLine("valor na filtering table: " + ii);
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    auxLst.Add(evt.MsgNumber);
-                                                    Console.WriteLine("adicionado valor na filtering table: " + evt.MsgNumber);
-                                                    auxLst.OrderBy(o => o).ToList();
-                                                }
-                                                brokersWhoWereNeglected.Add(bb.getURL());
-                                            }
-                                        }
-                                    }
-                                }
-
-
-
-                            }
-                        }
-
-                    }                  
+                    deliverToSub(url, evt);
+                    forwardToBroker(url, evt);                                   
                 }
             }
         }
@@ -408,37 +502,21 @@ namespace Broker
             }
             result = auxResult.ToList();
             return result;
-            /*List<SubscriberInterface> result = new List<SubscriberInterface>();
-            string topicKey;
-            foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
-            {
-                topicKey = entry.Key;
-                if ((!topicKey.Equals(topic)) || (!isSubtopicOf(topic, topicKey)))
-                {
-                    foreach(SubscriberInterface s in entry.Value)
-                    {
-                        if (!result.Contains(s))
-                        {
-                            result.Add(s);
-                        }
-                    }
-                }
-            }
-            return result;*/
         }
 
 
         //quando recebemos um evento temos de verificar se nao ha eventos anteriormente recebidos que tiveram de ser guardados 
         //porque nao tinha sido recebido um evento anterior. Se houver, temos de entrega-los ao sub
-        public void flushMsgQueue(SubAux subAux, SubscriberInterface sub, string pubURL, int nextLastMsgNumber)
-        {
+        public void flushMsgQueue(SubAux subAux, SubscriberInterface sub, string pubURL)
+        { 
             if (subAux.msgQueue(pubURL) != null)
             {
+               
                 List<Event> eventsToRemove = new List<Event>();
 
                 foreach (Event pendingEvent in subAux.msgQueue(pubURL))
                 {
-                    if (pendingEvent.MsgNumber == nextLastMsgNumber)
+                    if (pendingEvent.MsgNumber == subAux.lastMsgNumber(pubURL)+1)
                     {
                         sub.deliverToSub(pendingEvent);
                         subAux.updateLastMsgNumber(pubURL);
@@ -446,6 +524,30 @@ namespace Broker
                     }
                 }
                 subAux.updateMsgQueue(pubURL, eventsToRemove);
+                eventsToRemove.Clear();
+            }
+        }
+
+        public void flushMsgQueueTopic(SubAux subAux, SubscriberInterface sub, string topic)
+        {
+            
+            if (subAux.msgQueueTopic(topic) != null)
+            {
+                Console.WriteLine("entrei na msgQUEUE");
+                List<Event> eventsToRemove = new List<Event>();
+
+                foreach (Event pendingEvent in subAux.msgQueueTopic(topic))
+                {
+                    Console.WriteLine("msg number na msgQueue: " + pendingEvent.MsgNumber);
+                    Console.WriteLine("next msg number a entregar: " + subAux.lastMsgNumber(topic));
+                    if (pendingEvent.MsgNumber == subAux.lastMsgNumber(topic)+1)
+                    {
+                        sub.deliverToSub(pendingEvent);
+                        subAux.updateLastMsgNumber(topic);
+                        eventsToRemove.Add(pendingEvent);
+                    }
+                }
+                subAux.updateMsgQueueTopic(topic, eventsToRemove);
                 eventsToRemove.Clear();
             }
         }
@@ -515,7 +617,7 @@ namespace Broker
                 SubscriberInterface newSubscriber = (SubscriberInterface)Activator.GetObject(
                            typeof(SubscriberInterface), subscriberURL);
 
-                if (ordering == "FIFO")
+                if (ordering == "FIFO" || ordering == "TOTAL")
                 {
                     foreach (SubAux sub in subLastMsgReceived)
                     {
@@ -578,6 +680,7 @@ namespace Broker
                 {
                     if (sub.getURL().Equals(subscriberURL))
                     {
+                        SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
                         if (subscribersByTopic[topic].Count == 1)
                         {
                             subscribersByTopic.Remove(topic);
@@ -585,10 +688,10 @@ namespace Broker
                         }
                         else
                         {
-                            subscribersByTopic[topic].RemoveAt(index);
+                            subscribersByTopic[topic].RemoveAt(index);                           
                             return;
                         }
-                        SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                        
                         break;
                     }
                     index++;
@@ -622,6 +725,7 @@ namespace Broker
             Console.WriteLine("Unsubscriber: " + subscriberURL + " topic: " + topic);
         }
 
+
         public void publishEvent(Event newEvent)
         {
             lock (this) {
@@ -646,14 +750,31 @@ namespace Broker
                     {
                         forwardEvent(this.url, newEvent);
                         lastMsgNumberByPub[pubURL]++;
-                        Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
-                        flushPubMsgQueue(pubURL);
+                        flushPubMsgQueue(pubURL);                      
+                        Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);                    
                     }
                     else
                     {
                         msgQueueByPub[pubURL].Add(newEvent);
                         msgQueueByPub[pubURL].OrderBy(o => o.MsgNumber).ToList();
                     }
+                }
+                else if (ordering == "TOTAL")
+                {
+                    List<BrokerToBrokerInterface> auxLst = new List<BrokerToBrokerInterface>();
+                    if (!brokersByTopic.TryGetValue(newEvent.Topic, out auxLst))
+                    {
+                        brokersByTopic.Add(newEvent.Topic, new List<BrokerToBrokerInterface>());
+                    }
+                    //Vamos usar o root como sequencer de todos os topicos. 
+                    if (root == null)
+                        rootURL = findRootNode();
+                    root = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), rootURL);
+                    Console.WriteLine("root url: " + rootURL);
+                    //enviamos ao sequencer a mensagem sem o conteudo. Para ser mais eficaz
+                    Event evt = new Event(newEvent.PublisherName, newEvent.Topic, "", newEvent.MsgNumber);
+                    root.reqSequence(this.url, evt);
+                    holdBackQueueByTopic.Add(Tuple.Create(newEvent.PublisherName, newEvent.MsgNumber), newEvent);
                 }
                 else
                 {
@@ -662,7 +783,58 @@ namespace Broker
                 }
             }       
         }
+        //root é o sequencer. 
+        //url é para onde temos de mandar a respota
+        public void reqSequence(string url, Event evt)
+        {
+            lock (this)
+            {
+                Console.WriteLine("Sequencer received request from: " + url);
+                string topic = evt.Topic;
+                int result = 0;
+                int seqNumb;
+                if (!seqNumberByTopic.TryGetValue(topic, out seqNumb))
+                {
+                    seqNumberByTopic.Add(topic, initSequencerNumber+1);
+                }
+                else
+                {
+                    seqNumberByTopic[topic]++;
+                    result = seqNumberByTopic[topic];
+                    Console.WriteLine("SEQ number que vou devolver: " + result);
+                }
+                BrokerToBrokerInterface brk = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url+"B");
+                brk.rcvSeqNumber(result, evt);
+            }
+        }
 
+        public void rcvSeqNumber(int seqNumber, Event evt)
+        {
+            lock (this)
+            {
+                Event aux;
+                if(holdBackQueueByTopic.TryGetValue(Tuple.Create(evt.PublisherName, evt.MsgNumber), out aux))
+                {
+                    Event seqedEvent = new Event(aux.PublisherName, aux.Topic, aux.Content, seqNumber);
+                    Console.WriteLine("Msg original broker: " + this.url);
+                    Console.WriteLine("Msg topic: " + aux.Topic + " from: " + aux.PublisherName);
+                    Console.WriteLine("new msgNumber given by sequencer: " + seqNumber);
+                    Console.WriteLine("old msgNumber: " + evt.MsgNumber);
+                    forwardEvent(this.url, seqedEvent);
+                }
+                else
+                {
+                    Console.WriteLine("Unrequested seqNumber");
+                }                
+            }
+        }
+
+        //pode ser uma procura na arvore que se faz uma vez. Vai-se perguntando ao pai ate se encontrar um no sem pai. Devolve-se essa info
+        //aos outros nos. Ou root podia fazer flooding do seu url. Ou hardcoded como agora 
+        public string findRootNode()
+        {
+            return "tcp://localhost:3333/brokerB";
+        }
 
         public void flushPubMsgQueue(string pubURL)
         {

@@ -21,6 +21,8 @@ namespace CommonTypes
         void forwardInterest(string url, string topic);
         void forwardDisinterest(string url, string topic);
         string getURL();
+        void reqSequence(string url, Event evt);
+        void rcvSeqNumber(int seqNumber, Event evt);
     }
 
     public interface BrokerSubscribeInterface {
@@ -34,12 +36,27 @@ namespace CommonTypes
         private string content;
         private string publisherName;
         private int msgNumber;
+        private bool order;
+        private int seq;
 
         public Event(string publisherName, string topic, string content, int msgNumber) {
             this.publisherName = publisherName;
             this.topic = topic;
             this.content = content;
             this.msgNumber = msgNumber;
+            this.order = false;
+        }
+
+        public bool Order
+        {
+            get { return order; }
+            set { order = value; }
+        }
+
+        public int Seq
+        {
+            get { return seq; }
+            set { seq = value; }
         }
 
         public string Topic {
@@ -77,7 +94,7 @@ namespace CommonTypes
         {
             Event e = obj as Event;
 
-            return e.content.Equals(this.Content) && e.Topic.Equals(this.Topic) && e.PublisherName.Equals(this.publisherName);
+            return e.content.Equals(this.Content) && e.Topic.Equals(this.Topic) && e.PublisherName.Equals(this.publisherName) && e.Order==this.Order;
         }
 
     }
@@ -96,7 +113,7 @@ namespace CommonTypes
         }
     }
 
-    public class SameBrokerComparar : IEqualityComparer<BrokerToBrokerInterface>
+    public class SameBrokerComparer : IEqualityComparer<BrokerToBrokerInterface>
     {
         public int GetHashCode(BrokerToBrokerInterface co)
         {
@@ -119,6 +136,32 @@ namespace CommonTypes
                 return false;
             }
             return x1.getURL() == x2.getURL();
+        }
+    }
+
+    public class SameEventTOTALComparer : IEqualityComparer<Event>
+    {
+        public int GetHashCode(Event e)
+        {
+            int hash = 13;
+            hash = (hash * 7) + e.Topic.GetHashCode();
+            hash = (hash * 7) + e.PublisherName.GetHashCode();
+            return hash;
+        }
+
+        public bool Equals(Event x1, Event x2)
+        {
+            if (object.ReferenceEquals(x1, x2))
+            {
+                return true;
+            }
+            if (object.ReferenceEquals(x1, null) ||
+                object.ReferenceEquals(x2, null))
+            {
+                return false;
+            }
+
+            return x1.Content.Equals(x2.Content) && x1.Topic.Equals(x2.Topic) && x1.PublisherName.Equals(x2.PublisherName);
         }
     }
 

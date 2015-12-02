@@ -15,61 +15,15 @@ namespace Broker
         Dictionary<string, int> lastMsgNumberByPub = new Dictionary<string, int>();
         //utilizado para registar os numeros de sequencia dos eventos que foram filtrados
         Dictionary<string, List<int>> filteredSeqNumbers = new Dictionary<string, List<int>>();
+        //para a total order. Ja nao fazemos a distincao por publisher mas sim por topico
+        Dictionary<string, List<Event>> msgQueueByTopic = new Dictionary<string, List<Event>>();
 
-        //conjunto dos publishers que publicam eventos de topicos a que o sub está subscrito (e respectivos topicos)
-      //  Dictionary<string, HashSet<string>> pubs = new Dictionary<string, HashSet<string>>();
 
         public SubAux(SubscriberInterface sub)
         {
             this.sub = sub;
         }
 
-      /*  public void addPub(string pubURL, string msgTopic)
-        {
-            HashSet<string> auxHst;
-            if(pubs.TryGetValue(pubURL, out auxHst))
-            {
-                if(!auxHst.Contains(msgTopic))
-                    auxHst.Add(msgTopic);
-            }
-            else
-            {
-                pubs.Add(pubURL, new HashSet<string>(){ msgTopic });
-            }
-        }
-
-        public void updatePubs(string topic)
-        {
-            foreach(KeyValuePair<string, HashSet<string>> entry in pubs)
-            {
-                entry.Value.Remove(topic);
-            }
-        }
-
-        public bool assertPub(string pubURL)
-        {
-            HashSet<string> auxHst;
-            if (pubs.TryGetValue(pubURL, out auxHst))
-            {
-                if (auxHst.Count == 0) return false;
-                return true;
-            }
-            return false; 
-        }
-
-        //sees if, for a specific publisher, the sub is subscribed to more topics from that pub
-        public bool assertMoreTopics(string pubURL, string topic)
-        {
-            HashSet<string> auxHst;
-            if (pubs.TryGetValue(pubURL, out auxHst))
-            {
-                HashSet<string> tempHst = auxHst;
-                tempHst.Remove(topic);
-                if (tempHst.Count > 0) return true;
-            }
-            return false;
-        }
-        */
         public void addToQueue(Event evt)
         {
             string pubURL = evt.PublisherName;
@@ -84,6 +38,24 @@ namespace Broker
                 auxEvt.OrderBy(o => o.MsgNumber).ToList();              
             }
         }
+
+        public void addToQueueTopic(Event evt)
+        {
+            string topic = evt.Topic;
+            List<Event> auxEvt = new List<Event>();
+            if (!msgQueueByTopic.TryGetValue(topic, out auxEvt))
+            {
+                msgQueueByTopic.Add(topic, new List<Event> { evt });
+                Console.WriteLine("criei entrada na msgQueueByTopic. Topic: " + topic + " msg numero: " + evt.MsgNumber);
+            }
+            else
+            {
+                auxEvt.Add(evt);
+                auxEvt.OrderBy(o => o.MsgNumber).ToList();
+                Console.WriteLine("adicionada mensagem na msgQueueByTopic. Topic: " + topic + " msg numero: " + evt.MsgNumber);
+            }
+        }
+
 
         public int lastMsgNumber(string pubURL)
         {
@@ -109,11 +81,13 @@ namespace Broker
                 lastMsgNumberByPub.Add(pubURL, auxMsgNumber);
                 
             }
+            Console.WriteLine("lastMsg number updatado para: " + auxMsgNumber);
+
             if (filteredSeqNumbers.TryGetValue(pubURL, out seqNumbers))
             {
                 if (auxMsgNumber == seqNumbers.First())
                 {
-                    int cnt = 0;
+                    int cnt = -1;
                     foreach(int i in seqNumbers)
                     {
                         if (auxMsgNumber == i)
@@ -128,18 +102,16 @@ namespace Broker
                                 lastMsgNumberByPub.Add(pubURL, initLastMsgNumber++);
                             }
                             auxMsgNumber++;
+                            cnt++;
                         }
                         else
                         {
                             break;
-                        }
-                        cnt++;
+                        }                       
                     }
                     seqNumbers.RemoveRange(0, cnt);
                 }
             }
-                
-
         }
 
 
@@ -151,6 +123,13 @@ namespace Broker
             return null;
         }
 
+        public List<Event> msgQueueTopic(string topic)
+        {
+            List<Event> lst = new List<Event>();
+            if (msgQueueByTopic.TryGetValue(topic, out lst))
+                return lst;
+            return null;
+        }
 
         public SubscriberInterface Sub
         {
@@ -182,5 +161,18 @@ namespace Broker
                 }
             }
         }
+
+        public void updateMsgQueueTopic(string topic, List<Event> eventsToRemove)
+        {
+            List<Event> lst = new List<Event>();
+            if (msgQueueByTopic.TryGetValue(topic, out lst))
+            {
+                foreach (Event e in eventsToRemove)
+                {
+                    lst.Remove(e);
+                }
+            }
+        }
+
     }
 }

@@ -19,7 +19,6 @@ namespace Broker
         {
             forwardEventAsync del = (forwardEventAsync)((AsyncResult)ar).AsyncDelegate;
             del.EndInvoke(ar);
-
             return;
         }
 
@@ -42,6 +41,37 @@ namespace Broker
         {
             forwardInterestAsync forwardDelegate = new forwardInterestAsync(broker.forwardDisinterest);
             IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, topic, null, null);
+        }
+
+        public delegate void rcvSeqNumberAsync(int seqNumber, Event evt);
+        public static void RemoteAsyncCallBack(IAsyncResult ar)
+        {
+            rcvSeqNumberAsync del = (rcvSeqNumberAsync)((AsyncResult)ar).AsyncDelegate;
+            del.EndInvoke(ar);
+            return;
+        }
+
+        public void rcvSeqNumber(int seqNumber, Event evt)
+        {
+            rcvSeqNumberAsync forwardDelegate = new rcvSeqNumberAsync(broker.rcvSeqNumber);
+            AsyncCallback RemoteCallback = new AsyncCallback(BrokerToBrokerServices.RemoteAsyncCallBack);
+            IAsyncResult RemAr = forwardDelegate.BeginInvoke(seqNumber, evt, RemoteCallback, null);
+        }
+
+
+        public delegate void reqSequenceAsync(string url, Event evt);
+        public static void AnotherRemoteAsyncCallBack(IAsyncResult ar)
+        {
+            reqSequenceAsync del = (reqSequenceAsync)((AsyncResult)ar).AsyncDelegate;
+            del.EndInvoke(ar);
+            return;
+        }
+     
+        public void reqSequence(string url, Event evt)
+        {
+            reqSequenceAsync forwardDelegate = new reqSequenceAsync(broker.reqSequence);
+            AsyncCallback RemoteCallback = new AsyncCallback(BrokerToBrokerServices.AnotherRemoteAsyncCallBack);
+            IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, evt, AnotherRemoteAsyncCallBack, null);
         }
     }
 }
