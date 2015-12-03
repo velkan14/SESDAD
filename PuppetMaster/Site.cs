@@ -12,7 +12,7 @@ namespace PuppetMaster
         List<Site> sons;
         string[] brokerReplicas = new string[3];
         string[] replicasName = new string[3];
-        string brokerOnSiteURL;
+        string brokerOnSiteURL = "NULL";
         int leaderCounter = 0;
         //um broker por site. Por enquanto...
 

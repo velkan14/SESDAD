@@ -133,7 +133,7 @@ namespace PuppetMaster
                                     obj.createBroker(processName, URL, routingPolicy, ordering, loggingLevel,"tcp://" + ipPM + ":8086/PMNotifier", tmpSite.LeaderCounter);
                                     //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
                                     tmpSite.addReplica(URL, processName);
-                                    tmpSite.BrokerOnSiteURL = URL;
+                                    if(tmpSite.BrokerOnSiteURL == "NULL") tmpSite.BrokerOnSiteURL = URL;
                                     PMBroker broker = (PMBroker)Activator.GetObject(typeof(PMBroker),
                                         URL + "PM");
                                     brokerDict.Add(processName, broker);
