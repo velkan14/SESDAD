@@ -34,6 +34,7 @@ namespace Broker
         Dictionary<string,int> lastMsgNumberByPub = new Dictionary<string, int>();
         Dictionary<string, List<Event>> msgQueueByPub = new Dictionary<string, List<Event>>();
         Dictionary<string, HashSet<string>> topicsByPub = new Dictionary<string, HashSet<string>>();
+        Dictionary<string, DateTime> replicasHeartbeat = new Dictionary<string, DateTime>();
 
         //to store the messages until they can by TO-delivered 
         Dictionary<Tuple<string, int>, Event> holdBackQueueByTopic = new Dictionary<Tuple<string, int>, Event>();
@@ -106,6 +107,30 @@ namespace Broker
                 topicsByPub.Add(pubURL, new HashSet<string>() { msgTopic });
             }
         }
+
+        public void sendHeartBeat(string url)
+        {
+            lock (this)
+            {
+                foreach (BrokerToBrokerInterface rep in replicas)
+                {
+                    if (rep.getURL() == url)
+                    {
+                        DateTime time;
+                        if (!replicasHeartbeat.TryGetValue(url, out time))
+                        {
+                            replicasHeartbeat.Add(url, DateTime.Now);
+                        }
+                        else
+                        {
+                            replicasHeartbeat[url] = DateTime.Now;
+                        }
+                        Console.WriteLine("TimeStamp recebido de " + url + ": " + time);
+                    }
+                }
+            }
+        }
+
         //verifica se o sub está subscrito a outros topicos para alem de msgTopic publicados por pubURL
         public bool assertSubscription(string pubURL, string msgTopic, string subURL)
         {
@@ -1323,7 +1348,53 @@ namespace Broker
             {
                 BrokerToBrokerInterface brokerReplica = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), urlReplica + "B");
                 replicas.Add(brokerReplica);
+                if (replicas.Count == 2)
+                {
+                    AutoResetEvent autoEvent = new AutoResetEvent(false);
+
+                    TimerCallback tcb = this.checkHeartBeat;
+                    TimerCallback tcb2 = this.sendHeartBeatToReplica;
+
+                    // Create a timer that signals the delegate to invoke 
+                    // CheckStatus after one second, and every 1/4 second 
+                    // thereafter.
+                    Console.WriteLine("{0} Creating timer.\n",
+                        DateTime.Now.ToString("h:mm:ss.fff"));
+                    Timer stateTimer = new Timer(tcb, autoEvent, 1000, 5000);
+                    Timer sendHearbeatTimer = new Timer(tcb2, autoEvent, 1000, 2000);
+                }
             }
+        }
+
+        public void sendHeartBeatToReplica(object state)
+        {
+            if (!freezeFlag)
+            {
+                foreach (BrokerToBrokerInterface rep in replicas)
+                {
+                    rep.sendHeartBeat(this.url);
+                }
+            }
+        }
+
+        public void checkHeartBeat(object state)
+        {
+            lock (this)
+            {
+                foreach (KeyValuePair<string, DateTime> entry in replicasHeartbeat)
+                {
+                    TimeSpan timeout = new TimeSpan(0, 0, 10);
+                    TimeSpan aux = DateTime.Now - entry.Value;
+                    if (timeout <= aux)
+                    {
+                        if (!freezeFlag)
+                        {
+                            
+                        }
+                    }
+                }
+            }
+           
         }
 
         public bool assertPrimary()

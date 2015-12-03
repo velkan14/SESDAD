@@ -24,6 +24,7 @@ namespace CommonTypes
         void reqSequence(string url, Event evt);
         void rcvSeqNumber(int seqNumber, Event evt);
         void rcvGlobalInfo(int seqNb, string topic);
+        void sendHeartBeat(string url);
     }
 
     public interface BrokerSubscribeInterface {
