@@ -13,10 +13,11 @@ namespace Broker
     {
         string url;
         int initLastMsgNumber = -1; //porque comecamos a numerar as mensagens em 0...
-        int initSequencerNumber = -1;
         private int numberFreezes = 0;
         private bool freezeFlag = false;
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
+        int brokerID=1;
+        int LiderID=1;
 
         List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
@@ -43,6 +44,7 @@ namespace Broker
         Dictionary<int, string> globalInfo = new Dictionary<int, string>();
         Dictionary<string, List<int>> neglectedTotalTopicsBySub = new Dictionary<string, List<int>>();
         int seqNb = -1;
+        Dictionary<Tuple<string, int>, int> seqNbByMessage = new Dictionary<Tuple<string, int>, int>();
 
         List<Event> events = new List<Event>();
         string routing, ordering, loggingLevel;
@@ -183,7 +185,10 @@ namespace Broker
                     if (msgNumber == nextLastMsgNumber)
                     {
                         Console.WriteLine("entregar!!!!!!");
-                        sub.deliverToSub(evt);
+                        if (assertPrimary())
+                        {
+                            sub.deliverToSub(evt);
+                        }
                         subAux.updateLastMsgNumber(pubURL);
                         flushMsgQueue(subAux, sub, pubURL);
                         //para nao entregarmos a mesma mensagem duas vezes caso o sub esteja subscrito ao topico e a um
@@ -249,7 +254,10 @@ namespace Broker
                     if (msgNumber == nextLastMsgNumber)
                     {
                         Console.WriteLine("entregar!!!!!!");
-                        sub.deliverToSub(evt);
+                        if (assertPrimary())
+                        {
+                            sub.deliverToSub(evt);
+                        }                       
                         subAux.updateLastGlobalMsgNumber();
                         flushQueueTotal(sub, subAux);
                         //para nao entregarmos a mesma mensagem duas vezes caso o sub esteja subscrito ao topico e a um
@@ -267,7 +275,10 @@ namespace Broker
                         else
                         {
                             Console.WriteLine("afinal entregar!!!!!!");
-                            sub.deliverToSub(evt);
+                            if (assertPrimary())
+                            {
+                                sub.deliverToSub(evt);
+                            }
                             subAux.updateLastGlobalMsgNumber(evt.MsgNumber);
                             flushQueueTotal(sub, subAux);
                         }
@@ -292,7 +303,11 @@ namespace Broker
                     if (msgNumber == nextLastMsgNumber)
                     {
                         Console.WriteLine("entregar!!!!!!");
-                        sub.deliverToSub(evt);
+                        if (assertPrimary())
+                        {
+                            sub.deliverToSub(evt);
+                        }
+                        
                         subAux.updateLastGlobalMsgNumber();
                         flushQueueTotal(sub, subAux);
                         subsWhoGotMessage.Add(sub.getURL());
@@ -334,18 +349,21 @@ namespace Broker
             }
             else
             {
-                foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
+                if (assertPrimary())
                 {
-                    topic = entry.Key;
-                    foreach (SubscriberInterface sub in entry.Value)
+                    foreach (KeyValuePair<string, List<SubscriberInterface>> entry in subscribersByTopic)
                     {
-                        if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                        topic = entry.Key;
+                        foreach (SubscriberInterface sub in entry.Value)
                         {
-                            sub.deliverToSub(evt);
+                            if (topic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, topic))
+                            {
+                                sub.deliverToSub(evt);                                                 
+                            }
                         }
-                    }
 
-                }
+                    }
+                }                
             }
 
         }
@@ -354,16 +372,18 @@ namespace Broker
         {
             if (routing.Equals("flooding"))
             {
-                foreach (BrokerToBrokerInterface d in dad)
+                if (assertPrimary())
                 {
-                    d.forwardEvent(this.url, evt);
-                }
-                foreach (BrokerToBrokerInterface son in sons)
-                {
-                    son.forwardEvent(this.url, evt);
-                    notifyPM(evt);
-                }
-
+                    foreach (BrokerToBrokerInterface d in dad)
+                    {
+                        d.forwardEvent(this.url, evt);
+                    }
+                    foreach (BrokerToBrokerInterface son in sons)
+                    {
+                        son.forwardEvent(this.url, evt);
+                        notifyPM(evt);
+                    }
+                }             
             }
             else if (routing.Equals("filter") && ordering != "TOTAL")
             {
@@ -433,7 +453,10 @@ namespace Broker
                                         Console.WriteLine("Modifiquei a msg" + evt.Topic);
                                         Console.WriteLine("Novo msg number é: " + msgNumberCopy);
                                     }
-                                    broker.forwardEvent(this.url, modMsg);
+                                    if (assertPrimary())
+                                    {
+                                        broker.forwardEvent(this.url, modMsg);
+                                    }                                   
                                     brokersURLWhoGotMsg.Add(broker.getURL());
                                     notifyPM(evt);
                                 }
@@ -489,7 +512,10 @@ namespace Broker
                             if (!broker.getURL().Equals(url))
                             {
                                 if (!brokersURLWhoGotMsg.Contains(broker.getURL())){
-                                    broker.forwardEvent(this.url, evt);
+                                    if (assertPrimary())
+                                    {
+                                        broker.forwardEvent(this.url, evt);
+                                    }                                   
                                     brokersURLWhoGotMsg.Add(broker.getURL());
                                     notifyPM(evt);
                                 }
@@ -579,7 +605,10 @@ namespace Broker
                 {
                     if (pendingEvent.MsgNumber == subAux.lastMsgNumber(pubURL)+1)
                     {
-                        sub.deliverToSub(pendingEvent);
+                        if (assertPrimary())
+                        {
+                            sub.deliverToSub(pendingEvent);
+                        }                       
                         subAux.updateLastMsgNumber(pubURL);
                         eventsToRemove.Add(pendingEvent);
                     }
@@ -603,7 +632,10 @@ namespace Broker
                     Console.WriteLine("next msg number a entregar: " + subAux.lastMsgNumber(topic));
                     if (pendingEvent.MsgNumber == subAux.lastMsgNumber(topic)+1)
                     {
-                        sub.deliverToSub(pendingEvent);
+                        if (assertPrimary())
+                        {
+                            sub.deliverToSub(pendingEvent);
+                        }                        
                         subAux.updateLastMsgNumber(topic);
                         eventsToRemove.Add(pendingEvent);
                     }
@@ -809,7 +841,10 @@ namespace Broker
 
                     if (lastMsgNumberByPub[pubURL] + 1 == msgNumber)
                     {
-                        forwardEvent(this.url, newEvent);
+                        if (assertPrimary())
+                        {
+                            forwardEvent(this.url, newEvent);
+                        }                      
                         lastMsgNumberByPub[pubURL]++;
                         flushPubMsgQueue(pubURL);                      
                         Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);                    
@@ -834,12 +869,22 @@ namespace Broker
                     Console.WriteLine("root url: " + rootURL);
                     //enviamos ao sequencer a mensagem sem o conteudo. Para ser mais eficaz
                     Event evt = new Event(newEvent.PublisherName, newEvent.Topic, "", newEvent.MsgNumber);
-                    root.reqSequence(this.url, evt);
+                    if (assertPrimary())
+                    {
+                        root.reqSequence(this.url, evt);
+                    }
+                    else
+                    {
+                        
+                    }                    
                     holdBackQueueByTopic.Add(Tuple.Create(newEvent.PublisherName, newEvent.MsgNumber), newEvent);
                 }
                 else
                 {
-                    forwardEvent(this.url, newEvent);
+                    if (assertPrimary())
+                    {
+                        forwardEvent(this.url, newEvent);
+                    }                    
                     Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
                 }
             }       
@@ -858,7 +903,25 @@ namespace Broker
                     //Thread.Sleep(1000);
                     auxRcvGlobalInfo(seqNb, evt.Topic);
                 }
+                seqNbByMessage.Add(Tuple.Create(evt.Topic, evt.MsgNumber), seqNb);
                 BrokerToBrokerInterface brk = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url+"B");
+                brk.rcvSeqNumber(seqNb, evt);
+            }
+        }
+
+        public void reqSequenceReplica(string url, Event evt)
+        {
+            lock (this)
+            {
+                Console.WriteLine("Sequencer received request from: " + url);
+                seqNb = seqNb + 1;
+                if (routing == "filter")
+                {
+                    propagate(seqNb, evt.Topic);
+                    //Thread.Sleep(1000);
+                    auxRcvGlobalInfo(seqNb, evt.Topic);
+                }
+                BrokerToBrokerInterface brk = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url + "B");
                 brk.rcvSeqNumber(seqNb, evt);
             }
         }
@@ -875,7 +938,10 @@ namespace Broker
                     Console.WriteLine("Msg topic: " + aux.Topic + " from: " + aux.PublisherName);
                     Console.WriteLine("new msgNumber given by sequencer: " + seqNumber);
                     Console.WriteLine("old msgNumber: " + evt.MsgNumber);
-                    forwardEvent(this.url, seqedEvent);
+                    if (assertPrimary())
+                    {
+                        forwardEvent(this.url, seqedEvent);
+                    }                    
                 }
                 else
                 {
@@ -968,7 +1034,10 @@ namespace Broker
                 if((pendingEvent.MsgNumber == subAux.LastGlobalMsgNumber + 1) && !subAux.checkEventNotToDeliver(pendingEvent))
                 {                  
                     Console.WriteLine("entregar a msg que estava na queue");
-                    sub.deliverToSub(pendingEvent);
+                    if (assertPrimary())
+                    {
+                        sub.deliverToSub(pendingEvent);
+                    }
                     subAux.updateLastGlobalMsgNumber();
                     eventsToRemove.Add(pendingEvent);
                 }
@@ -1038,7 +1107,10 @@ namespace Broker
             {              
                 if (evt.MsgNumber == (lastMsgNumberByPub[pubURL] + 1))
                 {
-                    forwardEvent(this.url, evt);
+                    if (assertPrimary())
+                    {
+                        forwardEvent(this.url, evt);
+                    }                   
                     lastMsgNumberByPub[pubURL]++;
                     eventsToRemove.Add(evt);
                     Console.WriteLine("Event Forwarded by Publisher: " + evt.PublisherName + ", topic: " + evt.Topic);
@@ -1097,7 +1169,10 @@ namespace Broker
                 {
                     if (!entry.Value.Contains(topic))
                     {
-                        entry.Key.forwardInterest(this.url, topic);
+                        if (assertPrimary())
+                        {
+                            entry.Key.forwardInterest(this.url, topic);
+                        }                       
                         Console.WriteLine("Forwarded interest to " + entry.Key.getURL() + " on topic " + topic);
                         entry.Value.Add(topic);
                     }
@@ -1145,13 +1220,19 @@ namespace Broker
                     {
                         if (entry.Value.Contains(topic))
                         {
-                            entry.Key.forwardDisinterest(this.url, topic);
+                            if (assertPrimary())
+                            {
+                                entry.Key.forwardDisinterest(this.url, topic);
+                            }                           
                             Console.WriteLine("Forward disinterest to " + entry.Key.getURL() + " on topic " + topic);
                             entry.Value.Remove(topic);
 
                             foreach (string newTopic in wantedTopics)
                             {
-                                entry.Key.forwardInterest(this.url, newTopic);
+                                if (assertPrimary())
+                                {
+                                    entry.Key.forwardInterest(this.url, newTopic);
+                                }                               
                                 Console.WriteLine("Forward interest to " + entry.Key.getURL() + " on topic " + newTopic);
                                 entry.Value.Add(topic);
                             }
@@ -1242,6 +1323,18 @@ namespace Broker
             {
                 BrokerToBrokerInterface brokerReplica = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), urlReplica + "B");
                 replicas.Add(brokerReplica);
+            }
+        }
+
+        public bool assertPrimary()
+        {
+            if (brokerID == LiderID)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
     }
