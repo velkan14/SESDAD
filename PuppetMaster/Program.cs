@@ -126,11 +126,13 @@ namespace PuppetMaster
                                     processName = splitedConfig[1];
                                     site = splitedConfig[5];
                                     URL = splitedConfig[7];
+                                    Site tmpSite = findSiteByName(sites, site);
+
                                     obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                         "tcp://" + ipPM + ":8086/PMInterface");
-                                    obj.createBroker(processName, URL, routingPolicy, ordering, loggingLevel, "tcp://" + ipPM + ":8086/PMNotifier");
+                                    obj.createBroker(processName, URL, routingPolicy, ordering, loggingLevel,"tcp://" + ipPM + ":8086/PMNotifier", tmpSite.LeaderCounter);
                                     //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
-                                    Site tmpSite = findSiteByName(sites, site);
+                                    tmpSite.addReplica(URL, processName);
                                     tmpSite.BrokerOnSiteURL = URL;
                                     PMBroker broker = (PMBroker)Activator.GetObject(typeof(PMBroker),
                                         URL + "PM");
@@ -147,7 +149,6 @@ namespace PuppetMaster
                                     {
                                         broker.addSon(son);
                                     }
-
                                     break;
                                 case 4:
                                     //RoutingPolicy flooding
@@ -189,6 +190,20 @@ namespace PuppetMaster
                 Console.WriteLine("Config file NOT loaded.");
             }
 
+            foreach(Site s in sites)
+            {
+                for(int i = 0; i < s.Replicas.Length; i++)
+                {
+                    PMBroker broker = brokerDict[s.ReplicasName[i]];
+                    foreach (string urlReplica in s.Replicas)
+                    {
+                        if(urlReplica != s.Replicas[i])
+                        {
+                            broker.addReplica(urlReplica);
+                        }
+                    }
+                }
+            }
             Console.WriteLine("Loading script file");
             try {
                 string[] scriptFile = System.IO.File.ReadAllLines(@"..\..\..\script.txt");

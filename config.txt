@@ -6,20 +6,31 @@ Site site1 Parent site0
 Site site2 Parent site0
 Site site3 Parent site2
 
-Process broker0 Is broker On site0 URL tcp://localhost:3333/broker
-Process broker1 Is broker On site1 URL tcp://localhost:3334/broker
-Process broker2 Is broker On site2 URL tcp://localhost:3335/broker
-Process broker3 Is broker On site3 URL tcp://localhost:3336/broker
+Process broker00 Is broker On site0 URL tcp://localhost:3333/broker
+Process broker01 Is broker On site0 URL tcp://localhost:3334/broker
+Process broker02 Is broker On site0 URL tcp://localhost:3335/broker
 
-Process publisher0 Is publisher On site0 URL tcp://localhost:3337/pub
-Process publisher2 Is publisher On site2 URL tcp://localhost:3338/pub
-Process publisher3 Is publisher On site3 URL tcp://localhost:3339/pub
+Process broker10 Is broker On site1 URL tcp://localhost:3336/broker
+Process broker11 Is broker On site1 URL tcp://localhost:3337/broker
+Process broker12 Is broker On site1 URL tcp://localhost:3338/broker
 
-Process sub0 Is subscriber On site1 URL tcp://localhost:3340/sub
-Process sub1 Is subscriber On site1 URL tcp://localhost:3341/sub
-Process sub2 Is subscriber On site1 URL tcp://localhost:3342/sub
-Process sub3 Is subscriber On site1 URL tcp://localhost:3343/sub
-Process sub4 Is subscriber On site1 URL tcp://localhost:3344/sub
-Process sub5 Is subscriber On site1 URL tcp://localhost:3345/sub
-Process sub6 Is subscriber On site1 URL tcp://localhost:3346/sub
-Process sub7 Is subscriber On site3 URL tcp://localhost:3347/sub
+Process broker20 Is broker On site2 URL tcp://localhost:3339/broker
+Process broker21 Is broker On site2 URL tcp://localhost:3340/broker
+Process broker22 Is broker On site2 URL tcp://localhost:3341/broker
+
+Process broker30 Is broker On site3 URL tcp://localhost:3342/broker
+Process broker31 Is broker On site3 URL tcp://localhost:3343/broker
+Process broker32 Is broker On site3 URL tcp://localhost:3344/broker
+
+Process publisher0 Is publisher On site0 URL tcp://localhost:3345/pub
+Process publisher2 Is publisher On site2 URL tcp://localhost:3346/pub
+Process publisher3 Is publisher On site3 URL tcp://localhost:3347/pub
+
+Process sub0 Is subscriber On site1 URL tcp://localhost:3348/sub
+Process sub1 Is subscriber On site1 URL tcp://localhost:3349/sub
+Process sub2 Is subscriber On site1 URL tcp://localhost:3350/sub
+Process sub3 Is subscriber On site1 URL tcp://localhost:3351/sub
+Process sub4 Is subscriber On site1 URL tcp://localhost:3352/sub
+Process sub5 Is subscriber On site1 URL tcp://localhost:3353/sub
+Process sub6 Is subscriber On site1 URL tcp://localhost:3354/sub
+Process sub7 Is subscriber On site3 URL tcp://localhost:3355/sub

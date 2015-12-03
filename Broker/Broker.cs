@@ -20,6 +20,7 @@ namespace Broker
 
         List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
+        List<BrokerToBrokerInterface> replicas = new List<BrokerToBrokerInterface>();
         Dictionary<string, List<SubscriberInterface>> subscribersByTopic = new Dictionary<string, List<SubscriberInterface>>();
         List<SubAux> subLastMsgReceived = new List<SubAux>();
 
@@ -1233,6 +1234,15 @@ namespace Broker
                 if (!isSubtopic) stillInterestedTopics.Add(a);
             }
             return stillInterestedTopics;
+        }
+
+        public void addReplica(string urlReplica)
+        {
+            lock (this)
+            {
+                BrokerToBrokerInterface brokerReplica = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), urlReplica + "B");
+                replicas.Add(brokerReplica);
+            }
         }
     }
 }

@@ -39,9 +39,9 @@ namespace PuppetMaster
         {
             Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url + " " + urlBroker + " " + pmURL);
         }
-        public void createBroker(string processName, string url, string routing, string ordering, string loggingLevel, string pmURL)
+        public void createBroker(string processName, string url, string routing, string ordering, string loggingLevel, string pmURL, int leaderCount)
         {
-            Process.Start(@"..\..\..\Broker\bin\Debug\broker.exe", processName + " " + url +" "+ routing +" "+ ordering + " "+ loggingLevel +" " + pmURL);
+            Process.Start(@"..\..\..\Broker\bin\Debug\broker.exe", processName + " " + url +" "+ routing +" "+ ordering + " "+ loggingLevel +" " + pmURL + " " + leaderCount.ToString());
         }
         public void createPublisher(string processName, string url, string urlBroker, string pmURL)
         {

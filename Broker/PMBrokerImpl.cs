@@ -26,6 +26,12 @@ namespace Broker
             IAsyncResult RemAr = delegated.BeginInvoke(url, null, null);
         }
 
+        public void addReplica(string url)
+        {
+            Add delegated = new Add(broker.addReplica);
+            IAsyncResult RemAr = delegated.BeginInvoke(url, null, null);
+        }
+
         public void addSon(string url)
         {
             Add delegated = new Add(broker.addSon);

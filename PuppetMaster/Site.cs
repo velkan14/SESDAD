@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using CommonTypes;
 using System;
+using CommonTypesPM;
 
 namespace PuppetMaster
 {
@@ -9,7 +10,10 @@ namespace PuppetMaster
         string sitename;
         Site parent;
         List<Site> sons;
+        string[] brokerReplicas = new string[3];
+        string[] replicasName = new string[3];
         string brokerOnSiteURL;
+        int leaderCounter = 0;
         //um broker por site. Por enquanto...
 
         public Site(string sitename, Site parent)
@@ -48,11 +52,31 @@ namespace PuppetMaster
             set { brokerOnSiteURL = value; }
         }
 
+        public int LeaderCounter
+        {
+            get { return leaderCounter; }
+            set { leaderCounter = value; }
+        }
+
         public string Sitename
         {
             get { return sitename; }
         }
+        public string[] Replicas
+        {
+            get { return brokerReplicas; }
+        }
 
+        public string[] ReplicasName
+        {
+            get { return replicasName; }
+        }
+
+        internal void addReplica(string uRL, string processName)
+        {
+            brokerReplicas[leaderCounter] = uRL;
+            replicasName[leaderCounter++] = processName;
+        }
     }
 }
 
