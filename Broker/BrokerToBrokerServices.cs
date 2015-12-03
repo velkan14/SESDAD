@@ -73,5 +73,20 @@ namespace Broker
             AsyncCallback RemoteCallback = new AsyncCallback(BrokerToBrokerServices.AnotherRemoteAsyncCallBack);
             IAsyncResult RemAr = forwardDelegate.BeginInvoke(url, evt, AnotherRemoteAsyncCallBack, null);
         }
+
+        public delegate void rcvGlobalInfoAsync(int seqNb, string topic);
+        public static void rcvGlobalInfoRemoteAsyncCallBack(IAsyncResult ar)
+        {
+            rcvGlobalInfoAsync del = (rcvGlobalInfoAsync)((AsyncResult)ar).AsyncDelegate;
+            del.EndInvoke(ar);
+            return;
+        }
+
+        public void rcvGlobalInfo(int seqNb, string topic)
+        {
+            rcvGlobalInfoAsync propagateDelegate = new rcvGlobalInfoAsync(broker.rcvGlobalInfo);
+            AsyncCallback RemoteCallback = new AsyncCallback(BrokerToBrokerServices.rcvGlobalInfoRemoteAsyncCallBack);
+            IAsyncResult RemAr = propagateDelegate.BeginInvoke(seqNb, topic, rcvGlobalInfoRemoteAsyncCallBack, null);
+        }
     }
 }

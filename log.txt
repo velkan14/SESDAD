@@ -1,82 +1,58 @@
-4:50:13 AM Wednesday, December 2, 2015 : Subscriber sub1 Subscribe A
-4:50:13 AM Wednesday, December 2, 2015 : Subscriber sub1 Subscribe B
-4:50:14 AM Wednesday, December 2, 2015 : Subscriber sub2 Subscribe A
-4:50:14 AM Wednesday, December 2, 2015 : Subscriber sub2 Subscribe B
-4:50:19 AM Wednesday, December 2, 2015 : Wait 5000
-4:50:20 AM Wednesday, December 2, 2015 : Publisher publisher1 Publish 3 Ontopic B Interval 1000
-4:50:21 AM Wednesday, December 2, 2015 : Publisher publisher2 Publish 3 Ontopic A Interval 1000
-4:50:21 AM Wednesday, December 2, 2015 : Publisher publisher2 Publish 3 Ontopic B Interval 1000
-4:50:22 AM Wednesday, December 2, 2015 : Publisher publisher3 Publish 3 Ontopic A Interval 1000
-4:50:22 AM Wednesday, December 2, 2015 : PubEvent publisher1, publisher1, B, 0
-4:50:23 AM Wednesday, December 2, 2015 : PubEvent publisher2, publisher2, A, 0
-4:50:23 AM Wednesday, December 2, 2015 : PubEvent publisher1, publisher1, B, 1
-4:50:24 AM Wednesday, December 2, 2015 : PubEvent publisher3, publisher3, A, 0
-4:50:24 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher1, B, publisher1: 0
-4:50:24 AM Wednesday, December 2, 2015 : PubEvent publisher2, publisher2, B, 1
-4:50:24 AM Wednesday, December 2, 2015 : PubEvent publisher1, publisher1, B, 2
-4:50:25 AM Wednesday, December 2, 2015 : PubEvent publisher3, publisher3, A, 1
-4:50:25 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher1, B, 0
-4:50:25 AM Wednesday, December 2, 2015 : PubEvent publisher2, publisher2, A, 2
-4:50:25 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher1, B, 0
-4:50:25 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher1, B, 0
-4:50:25 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher1, B, publisher1: 0
-4:50:25 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher2, A, publisher2: 0
-4:50:25 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher2, B, publisher2: 1
-4:50:26 AM Wednesday, December 2, 2015 : Wait 4000
-4:50:26 AM Wednesday, December 2, 2015 : PubEvent publisher3, publisher3, A, 2
-4:50:26 AM Wednesday, December 2, 2015 : PubEvent publisher2, publisher2, B, 3
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, A, 0
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher2, A, 0
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher2, A, publisher2: 0
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, A, 0
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher3, A, 1
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher3, A, publisher3: 0
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher3, A, 1
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher3, A, 1
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher1, B, 2
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher3, A, publisher3: 0
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher2, A, publisher2: 2
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, B, 1
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher1, B, 3
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, B, 1
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher3, A, 3
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, A, 2
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, A, 2
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher2, B, publisher2: 1
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher1, B, publisher1: 1
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher2, B, 1
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher1, B, publisher1: 2
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher1, B, 2
-4:50:26 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher2, A, 2
-4:50:26 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher3, A, publisher3: 1
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher3, A, 4
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher2, A, publisher2: 2
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher1, B, 2
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher3, A, publisher3: 2
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher1, B, publisher1: 1
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher1, B, 3
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher1, B, 3
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher2, B, publisher2: 3
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher1, B, publisher1: 2
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher3, A, 3
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher3, A, 3
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher3, A, publisher3: 1
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, B, 4
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher2, B, 4
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher2, B, publisher2: 3
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, B, 4
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher3, A, 4
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher3, A, 4
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher3, A, publisher3: 2
-4:50:27 AM Wednesday, December 2, 2015 : PubEvent publisher2, publisher2, A, 4
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher2, A, publisher2: 4
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher2, A, 5
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, A, 5
-4:50:27 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher2, A, publisher2: 4
-4:50:27 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, A, 5
-4:50:28 AM Wednesday, December 2, 2015 : PubEvent publisher2, publisher2, B, 5
-4:50:28 AM Wednesday, December 2, 2015 : SubEvent sub2, publisher2, B, publisher2: 5
-4:50:28 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, B, 5
-4:50:28 AM Wednesday, December 2, 2015 : SubEvent sub1, publisher2, B, publisher2: 5
-4:50:28 AM Wednesday, December 2, 2015 : BroEvent broker1, publisher2, B, 5
-4:50:28 AM Wednesday, December 2, 2015 : BroEvent broker0, publisher2, B, 5
+5:00:10 AM Thursday, December 3, 2015 : Subscriber sub1 Subscribe A
+5:00:10 AM Thursday, December 3, 2015 : Subscriber sub1 Subscribe B
+5:00:11 AM Thursday, December 3, 2015 : Subscriber sub2 Subscribe A
+5:00:11 AM Thursday, December 3, 2015 : Subscriber sub2 Subscribe B
+5:00:13 AM Thursday, December 3, 2015 : Wait 2000
+5:00:14 AM Thursday, December 3, 2015 : Publisher publisher1 Publish 3 Ontopic A Interval 1000
+5:00:14 AM Thursday, December 3, 2015 : Publisher publisher1 Publish 3 Ontopic C Interval 1000
+5:00:15 AM Thursday, December 3, 2015 : Publisher publisher2 Publish 3 Ontopic A Interval 1000
+5:00:15 AM Thursday, December 3, 2015 : Publisher publisher2 Publish 3 Ontopic B Interval 1000
+5:00:16 AM Thursday, December 3, 2015 : PubEvent publisher1, publisher1, A, 0
+5:00:16 AM Thursday, December 3, 2015 : SubEvent sub1, publisher1, A, publisher1: 0
+5:00:16 AM Thursday, December 3, 2015 : BroEvent broker1, publisher1, A, 0
+5:00:16 AM Thursday, December 3, 2015 : SubEvent sub2, publisher1, A, publisher1: 0
+5:00:16 AM Thursday, December 3, 2015 : BroEvent broker0, publisher1, A, 0
+5:00:16 AM Thursday, December 3, 2015 : SubEvent sub2, publisher2, A, publisher2: 0
+5:00:16 AM Thursday, December 3, 2015 : BroEvent broker0, publisher2, A, 1
+5:00:16 AM Thursday, December 3, 2015 : SubEvent sub1, publisher2, A, publisher2: 0
+5:00:17 AM Thursday, December 3, 2015 : PubEvent publisher1, publisher1, C, 1
+5:00:17 AM Thursday, December 3, 2015 : PubEvent publisher2, publisher2, A, 0
+5:00:17 AM Thursday, December 3, 2015 : Wait 2000
+5:00:17 AM Thursday, December 3, 2015 : BroEvent broker2, publisher2, A, 1
+5:00:18 AM Thursday, December 3, 2015 : PubEvent publisher1, publisher1, A, 2
+5:00:18 AM Thursday, December 3, 2015 : SubEvent sub1, publisher1, A, publisher1: 2
+5:00:18 AM Thursday, December 3, 2015 : BroEvent broker0, publisher1, A, 3
+5:00:18 AM Thursday, December 3, 2015 : BroEvent broker1, publisher1, A, 3
+5:00:18 AM Thursday, December 3, 2015 : SubEvent sub2, publisher1, A, publisher1: 2
+5:00:18 AM Thursday, December 3, 2015 : PubEvent publisher2, publisher2, B, 1
+5:00:18 AM Thursday, December 3, 2015 : SubEvent sub2, publisher2, B, publisher2: 1
+5:00:18 AM Thursday, December 3, 2015 : BroEvent broker2, publisher2, B, 4
+5:00:18 AM Thursday, December 3, 2015 : BroEvent broker0, publisher2, B, 4
+5:00:18 AM Thursday, December 3, 2015 : SubEvent sub1, publisher2, B, publisher2: 1
+5:00:19 AM Thursday, December 3, 2015 : PubEvent publisher1, publisher1, C, 3
+5:00:19 AM Thursday, December 3, 2015 : PubEvent publisher2, publisher2, A, 2
+5:00:19 AM Thursday, December 3, 2015 : SubEvent sub2, publisher2, A, publisher2: 2
+5:00:19 AM Thursday, December 3, 2015 : BroEvent broker2, publisher2, A, 6
+5:00:19 AM Thursday, December 3, 2015 : BroEvent broker0, publisher2, A, 6
+5:00:19 AM Thursday, December 3, 2015 : SubEvent sub1, publisher2, A, publisher2: 2
+5:00:20 AM Thursday, December 3, 2015 : PubEvent publisher1, publisher1, A, 4
+5:00:20 AM Thursday, December 3, 2015 : SubEvent sub1, publisher1, A, publisher1: 4
+5:00:20 AM Thursday, December 3, 2015 : BroEvent broker0, publisher1, A, 7
+5:00:20 AM Thursday, December 3, 2015 : BroEvent broker1, publisher1, A, 7
+5:00:20 AM Thursday, December 3, 2015 : SubEvent sub2, publisher1, A, publisher1: 4
+5:00:20 AM Thursday, December 3, 2015 : PubEvent publisher2, publisher2, B, 3
+5:00:20 AM Thursday, December 3, 2015 : SubEvent sub2, publisher2, B, publisher2: 3
+5:00:20 AM Thursday, December 3, 2015 : BroEvent broker0, publisher2, B, 8
+5:00:20 AM Thursday, December 3, 2015 : BroEvent broker2, publisher2, B, 8
+5:00:20 AM Thursday, December 3, 2015 : SubEvent sub1, publisher2, B, publisher2: 3
+5:00:21 AM Thursday, December 3, 2015 : PubEvent publisher1, publisher1, C, 5
+5:00:21 AM Thursday, December 3, 2015 : PubEvent publisher2, publisher2, A, 4
+5:00:21 AM Thursday, December 3, 2015 : SubEvent sub2, publisher2, A, publisher2: 4
+5:00:21 AM Thursday, December 3, 2015 : BroEvent broker2, publisher2, A, 10
+5:00:21 AM Thursday, December 3, 2015 : BroEvent broker0, publisher2, A, 10
+5:00:21 AM Thursday, December 3, 2015 : SubEvent sub1, publisher2, A, publisher2: 4
+5:00:22 AM Thursday, December 3, 2015 : PubEvent publisher2, publisher2, B, 5
+5:00:22 AM Thursday, December 3, 2015 : SubEvent sub2, publisher2, B, publisher2: 5
+5:00:22 AM Thursday, December 3, 2015 : SubEvent sub1, publisher2, B, publisher2: 5
+5:00:22 AM Thursday, December 3, 2015 : BroEvent broker2, publisher2, B, 11
+5:00:22 AM Thursday, December 3, 2015 : BroEvent broker0, publisher2, B, 11

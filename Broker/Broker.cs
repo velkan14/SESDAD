@@ -35,10 +35,13 @@ namespace Broker
 
         //to store the messages until they can by TO-delivered 
         Dictionary<Tuple<string, int>, Event> holdBackQueueByTopic = new Dictionary<Tuple<string, int>, Event>();
-       //just for the sequencer
-       Dictionary<string, int> seqNumberByTopic = new Dictionary<string, int>();
+        //just for the sequencer
+        Dictionary<string, int> seqNumberByTopic = new Dictionary<string, int>();
         BrokerToBrokerInterface root;
         string rootURL = null;
+        Dictionary<int, string> globalInfo = new Dictionary<int, string>();
+        Dictionary<string, List<int>> neglectedTotalTopicsBySub = new Dictionary<string, List<int>>();
+        int seqNb = -1;
 
         List<Event> events = new List<Event>();
         string routing, ordering, loggingLevel;
@@ -145,7 +148,7 @@ namespace Broker
             int msgNumber = evt.MsgNumber;
             string msgTopic = evt.Topic;
 
-            //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nela por se tratar dum topico ou subtopico que queira
+            //a ideia subjacente é a de que quando um evento chega a um sub ele pode estar interessado nele por se tratar dum topico ou subtopico que queira
             //Mas tambem ha a possibilidade de apesar de nao estar interessado directamente nesse topico/subtopico (porque nao subscreveu)
             //precisa de ser avisado relativamente ao numero de sequencia da mensagem. Isto acontece quando essa mensagem vem de um publisher
             //que publica mensagens dos topicos que o sub quer
@@ -201,7 +204,6 @@ namespace Broker
                     {
                         SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == ss.getURL());
                         //verificar se o topico interessa ao sub
-
                         if (assertSubscription(pubURL, msgTopic, ss.getURL()))
                         {
                             int nextLastMsgNumber = subAux.lastMsgNumber(pubURL) + 1;
@@ -226,21 +228,17 @@ namespace Broker
                 }
                 Console.WriteLine("ENDING FIFO");
             }
-            else if (ordering == "TOTAL")
+            else if (ordering == "TOTAL" && routing!="flooding")
             {
                 Console.WriteLine("******************************");
                 Console.WriteLine("TOTALing IT OUT!");
                 HashSet<string> subsWhoGotMessage = new HashSet<string>();
                 List<SubscriberInterface> subset = new List<SubscriberInterface>();
                 subset = setOfTopics(msgTopic);
-                foreach (SubscriberInterface y in subset)
-                {
-                    Console.WriteLine("subset member: " + y);
-                }
                 foreach (SubscriberInterface sub in subset)
                 {
                     SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
-                    int nextLastMsgNumber = subAux.lastMsgNumber(msgTopic) + 1;
+                    int nextLastMsgNumber = subAux.LastGlobalMsgNumber + 1;
 
                     Console.WriteLine("SUBSCRIBER: " + sub.getURL());
                     Console.WriteLine("PUBLISHER: " + pubURL);
@@ -251,48 +249,87 @@ namespace Broker
                     {
                         Console.WriteLine("entregar!!!!!!");
                         sub.deliverToSub(evt);
-                        subAux.updateLastMsgNumber(msgTopic);
-                        flushMsgQueueTopic(subAux, sub, msgTopic);
+                        subAux.updateLastGlobalMsgNumber();
+                        flushQueueTotal(sub, subAux);
                         //para nao entregarmos a mesma mensagem duas vezes caso o sub esteja subscrito ao topico e a um
                         //hipertopico
                         subsWhoGotMessage.Add(sub.getURL());
                     }
                     else
                     {
+                        //verificar se as mensagens em falta nao sao mensagens que simplesmente nao queremos. Se forem, entao podemos entregar a mensagem
+                        if(!assertOldTotalMsg(sub.getURL(), evt.MsgNumber))
+                        {
+                            Console.WriteLine("arquivar!!!!");
+                            subAux.addToQueueTotal(evt);                      
+                        }
+                        else
+                        {
+                            Console.WriteLine("afinal entregar!!!!!!");
+                            sub.deliverToSub(evt);
+                            subAux.updateLastGlobalMsgNumber(evt.MsgNumber);
+                            flushQueueTotal(sub, subAux);
+                        }
+                        
+                    }
+                }
+            }
+            else if(ordering == "TOTAL" && routing == "flooding"){
+                addToPubsByTopic(pubURL, msgTopic);
+                HashSet<string> subsWhoGotMessage = new HashSet<string>();
+                List<SubscriberInterface> subset = new List<SubscriberInterface>();
+                subset = setOfTopics(msgTopic);
+                foreach (SubscriberInterface sub in subset)
+                {
+                    SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == sub.getURL());
+                    int nextLastMsgNumber = subAux.LastGlobalMsgNumber + 1;
+                    Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                    Console.WriteLine("PUBLISHER: " + pubURL);
+                    Console.WriteLine("MSG TOPIC = " + msgTopic);
+                    Console.WriteLine("Msg Number = " + evt.MsgNumber);
+                    Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                    if (msgNumber == nextLastMsgNumber)
+                    {
+                        Console.WriteLine("entregar!!!!!!");
+                        sub.deliverToSub(evt);
+                        subAux.updateLastGlobalMsgNumber();
+                        flushQueueTotal(sub, subAux);
+                        subsWhoGotMessage.Add(sub.getURL());
+                    }
+                    else
+                    {
                         Console.WriteLine("arquivar!!!!");
-                        subAux.addToQueueTopic(evt);
+                        subAux.addToQueueTotal(evt);
+                        subsWhoGotMessage.Add(sub.getURL());
                     }
                 }
 
                 subset = setNonTopics(msgTopic);
-
                 foreach (SubscriberInterface ss in subset)
                 {
+                    //se ja recebeu nao interessa mais. Evitar que seja entregue a mesma msg duas vezes ao mesmo sub
                     if (!subsWhoGotMessage.Contains(ss.getURL()))
-                    {
+                    {                       
                         SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == ss.getURL());
-                        if (assertTopicsSubbed(ss.getURL(), msgTopic))
+                        int nextLastMsgNumber = subAux.LastGlobalMsgNumber + 1;
+                        Console.WriteLine("SUBSCRIBER: " + ss.getURL());
+                        Console.WriteLine("PUBLISHER: " + pubURL);
+                        Console.WriteLine("MSG TOPIC = " + msgTopic);
+                        Console.WriteLine("Msg Number = " + evt.MsgNumber);
+                        Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
+                        if (msgNumber == nextLastMsgNumber)
                         {
-                            int nextLastMsgNumber = subAux.lastMsgNumber(msgTopic) + 1;
-                            if (msgNumber == nextLastMsgNumber)
-                            {
-                                Console.WriteLine("Entrei mas nao sou topico!");
-                                Console.WriteLine("******************************");
-                                Console.WriteLine("SUBSCRIBER: " + ss.getURL());
-                                Console.WriteLine("PUBLISHER: " + pubURL);
-                                Console.WriteLine("MSG TOPIC = " + msgTopic);
-                                Console.WriteLine("nextLastMsgNumber = " + nextLastMsgNumber);
-                                subAux.updateLastMsgNumber(msgTopic);
-                                flushMsgQueueTopic(subAux, ss, msgTopic);
-                            }
-                            else
-                            {
-                                subAux.addfilteredSeqNumber(pubURL, msgNumber);
-                            }
+                            subAux.updateLastGlobalMsgNumber();
+                            flushQueueTotal(ss, subAux);
                         }
+                        else
+                        {
+                            subAux.addToQueueTotal(evt);
+                            subAux.addEventNotToDeliver(evt.MsgNumber);
+                        }                                                            
                     }
-
                 }
+
             }
             else
             {
@@ -327,7 +364,7 @@ namespace Broker
                 }
 
             }
-            else if (routing.Equals("filter"))
+            else if (routing.Equals("filter") && ordering != "TOTAL")
             {
                 Console.WriteLine("FILTERING!!!!!!!!!!!!!!!!!!!!");
                 Console.WriteLine("MSG TOPIC: " + evt.Topic);
@@ -427,10 +464,33 @@ namespace Broker
                                         {
                                             auxLst.Add(evt.MsgNumber);
                                             Console.WriteLine("adicionado valor na filtering table: " + evt.MsgNumber);
-                                            auxLst.OrderBy(o => o).ToList();
+                                            filteringTable[tp] = auxLst.OrderBy(o => o).ToList();
                                         }
                                         brokersWhoWereNeglected.Add(bb.getURL());
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            else if (routing.Equals("filter") && ordering == "TOTAL")
+            {
+                HashSet<string> brokersURLWhoGotMsg = new HashSet<string>();
+                foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> entry in brokersByTopic)
+                {
+                    string keyTopic = entry.Key;
+                    if (keyTopic.Equals(evt.Topic) || isSubtopicOf(evt.Topic, keyTopic))
+                    {
+                        foreach (BrokerToBrokerInterface broker in entry.Value)
+                        {
+                            if (!broker.getURL().Equals(url))
+                            {
+                                if (!brokersURLWhoGotMsg.Contains(broker.getURL())){
+                                    broker.forwardEvent(this.url, evt);
+                                    brokersURLWhoGotMsg.Add(broker.getURL());
+                                    notifyPM(evt);
                                 }
                             }
                         }
@@ -756,7 +816,7 @@ namespace Broker
                     else
                     {
                         msgQueueByPub[pubURL].Add(newEvent);
-                        msgQueueByPub[pubURL].OrderBy(o => o.MsgNumber).ToList();
+                        msgQueueByPub[pubURL] = msgQueueByPub[pubURL].OrderBy(o => o.MsgNumber).ToList();
                     }
                 }
                 else if (ordering == "TOTAL")
@@ -790,21 +850,15 @@ namespace Broker
             lock (this)
             {
                 Console.WriteLine("Sequencer received request from: " + url);
-                string topic = evt.Topic;
-                int result = 0;
-                int seqNumb;
-                if (!seqNumberByTopic.TryGetValue(topic, out seqNumb))
+                seqNb = seqNb + 1;
+                if (routing == "filter")
                 {
-                    seqNumberByTopic.Add(topic, initSequencerNumber+1);
-                }
-                else
-                {
-                    seqNumberByTopic[topic]++;
-                    result = seqNumberByTopic[topic];
-                    Console.WriteLine("SEQ number que vou devolver: " + result);
+                    propagate(seqNb, evt.Topic);
+                    //Thread.Sleep(1000);
+                    auxRcvGlobalInfo(seqNb, evt.Topic);
                 }
                 BrokerToBrokerInterface brk = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), url+"B");
-                brk.rcvSeqNumber(result, evt);
+                brk.rcvSeqNumber(seqNb, evt);
             }
         }
 
@@ -834,6 +888,146 @@ namespace Broker
         public string findRootNode()
         {
             return "tcp://localhost:3333/brokerB";
+        }
+
+        //root vai propagar a info a todos os filhos. Isto é necessário para garantir total order com overlapping groups
+        public void propagate(int seqNb, string topic)
+        {
+            lock (this) { 
+                foreach (BrokerToBrokerInterface bb in sons)
+                {
+                    bb.rcvGlobalInfo(seqNb, topic);
+                }
+            }
+        }
+
+        //cada broker vai receber do sequencer informação sobre todas as mensagens no sistema. Mais concretamente vao receber o topico e o numero 
+        //de sequencia global atribuido pelo sequencer. Cada broker propaga esta info aos seus filhos. Cada broker verifica para cada um dos seus subs
+        //se o topico em questao lhe interessa. Se interessar, nao faz nada (porque eventualmente estes subs hao de receber esse evento). Se nao interessar entao
+        //regista numa tabela (neglectedTotalTopicsBySub) que aquela mensagem é doutro topico qq. Assim quando um sub receber uma mensagem que lhe interesse
+        //ve nessa tabela se a mensagem anterior (eventualmente mais do que a anterior) era dum topico que nao lhe interessava.
+        public void rcvGlobalInfo(int seqNb, string msgTopic)
+        {
+            lock (this)
+            {
+                propagate(seqNb, msgTopic);
+                auxRcvGlobalInfo(seqNb, msgTopic);
+            }  
+        }
+
+        public void auxRcvGlobalInfo(int seqNb, string msgTopic)
+        {
+            Console.WriteLine("received global info!");
+            Console.WriteLine("seqNB: " + seqNb + "msg topic: " + msgTopic);
+            HashSet<string> alreadyGotInfo = new HashSet<string>();
+
+            List<SubscriberInterface> subs = setOfTopics(msgTopic);
+            //para todos os subs que recebem mensagens deste topico nao precisamos de adicionar entrada na tabela
+            foreach(SubscriberInterface s in subs)
+            {
+                alreadyGotInfo.Add(s.getURL());
+                Console.WriteLine("sub que recebe o topico: " + s.getURL());
+            }
+            subs = setNonTopics(msgTopic);
+            foreach(SubscriberInterface ss in subs)
+            {
+                Console.WriteLine("sub que nao recebe o topico: " + ss.getURL());
+                if (!alreadyGotInfo.Contains(ss.getURL()))
+                {
+                    string subURL = ss.getURL();
+                    if (alreadyGotInfo.Contains(subURL)) { continue; }
+                    List<int> auxLst;
+                    if (!neglectedTotalTopicsBySub.TryGetValue(subURL, out auxLst))
+                    {
+                        neglectedTotalTopicsBySub.Add(subURL, new List<int>() { seqNb });
+                    }
+                    else
+                    {
+                        auxLst.Add(seqNb);
+                    }
+                    alreadyGotInfo.Add(subURL);
+                    Console.WriteLine("adicionada entrada na neglectedTOtal: " + seqNb);
+
+                }
+
+            }                
+            
+
+        }
+
+        public void flushQueueTotal(SubscriberInterface sub, SubAux subAux)
+        {
+            List<Event> lst = subAux.getQueueTotal();
+            List<Event> eventsToRemove = new List<Event>();
+            foreach(Event pendingEvent in lst)
+            {
+                Console.WriteLine("SUBSCRIBER: " + sub.getURL());
+                Console.WriteLine("MSG TOPIC = " + pendingEvent.Topic);
+                Console.WriteLine("Msg Number = " + pendingEvent.MsgNumber);
+                if((pendingEvent.MsgNumber == subAux.LastGlobalMsgNumber + 1) && !subAux.checkEventNotToDeliver(pendingEvent))
+                {                  
+                    Console.WriteLine("entregar a msg que estava na queue");
+                    sub.deliverToSub(pendingEvent);
+                    subAux.updateLastGlobalMsgNumber();
+                    eventsToRemove.Add(pendingEvent);
+                }
+                else if ((pendingEvent.MsgNumber == subAux.LastGlobalMsgNumber + 1) && subAux.checkEventNotToDeliver(pendingEvent))
+                {
+                    subAux.updateLastGlobalMsgNumber();
+                    eventsToRemove.Add(pendingEvent);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            subAux.updateMsgQueueTotal(eventsToRemove);
+            eventsToRemove.Clear();
+        }
+
+        public bool assertOldTotalMsg(string subURL, int msgNB)
+        {
+            SubAux subAux = subLastMsgReceived.Find(o => o.Sub.getURL() == subURL);
+            List<int> auxLst;
+            if(neglectedTotalTopicsBySub.TryGetValue(subURL, out auxLst))
+            {
+                int j = -1;
+                int next = -1;
+                List<int> toRemove = new List<int>();
+                int size = auxLst.Count;
+                for(int i = 0; i < size; i++)
+                {
+                    Console.WriteLine("valor da entrada na neglectedTOTAL: " + auxLst[i]);
+                    if (size > 1)
+                    {
+                        if(i!=size-1)
+                            next = auxLst[i+1];
+                    }
+                    if (auxLst[i] < msgNB)
+                    {
+                        j = auxLst[i];
+                        toRemove.Add(auxLst[i]);
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    if (auxLst[i]+1 != next && next!=-1)
+                    {
+                        break;
+                    }
+                    
+                }
+                if (j + 1 == msgNB)
+                {
+                    List<int> aux = neglectedTotalTopicsBySub[subURL].Except(toRemove).ToList();
+                    neglectedTotalTopicsBySub[subURL] = aux;
+                    Console.WriteLine("entrada removida da neglectedTOtal: " + j);
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void flushPubMsgQueue(string pubURL)

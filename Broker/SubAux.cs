@@ -17,7 +17,10 @@ namespace Broker
         Dictionary<string, List<int>> filteredSeqNumbers = new Dictionary<string, List<int>>();
         //para a total order. Ja nao fazemos a distincao por publisher mas sim por topico
         Dictionary<string, List<Event>> msgQueueByTopic = new Dictionary<string, List<Event>>();
-
+        List<Event> msgQueueTotal = new List<Event>();
+        List<int> filteredSeqTotal = new List<int>();
+        int lastGlobalMsgNumber = -1;
+        HashSet<int> eventsNotToDeliver = new HashSet<int>();
 
         public SubAux(SubscriberInterface sub)
         {
@@ -35,7 +38,7 @@ namespace Broker
             else
             {
                 auxEvt.Add(evt);
-                auxEvt.OrderBy(o => o.MsgNumber).ToList();              
+                msgQueueByPub[pubURL] = auxEvt.OrderBy(o => o.MsgNumber).ToList();              
             }
         }
 
@@ -51,11 +54,27 @@ namespace Broker
             else
             {
                 auxEvt.Add(evt);
-                auxEvt.OrderBy(o => o.MsgNumber).ToList();
+                msgQueueByTopic[topic] = auxEvt.OrderBy(o => o.MsgNumber).ToList();
                 Console.WriteLine("adicionada mensagem na msgQueueByTopic. Topic: " + topic + " msg numero: " + evt.MsgNumber);
             }
         }
 
+        public void addToQueueTotal(Event evt)
+        {
+            msgQueueTotal.Add(evt);
+            msgQueueTotal = msgQueueTotal.OrderBy(o => o.MsgNumber).ToList();
+        }
+
+        public List<Event> updateQueueTotal(int msgNb)
+        {
+
+            return msgQueueTotal;
+        }
+
+        public List<Event> getQueueTotal()
+        {
+            return msgQueueTotal;
+        }
 
         public int lastMsgNumber(string pubURL)
         {
@@ -85,9 +104,10 @@ namespace Broker
 
             if (filteredSeqNumbers.TryGetValue(pubURL, out seqNumbers))
             {
+                List<int> toRemove = new List<int>();
                 if (auxMsgNumber == seqNumbers.First())
                 {
-                    int cnt = -1;
+                    //int cnt = -1;
                     foreach(int i in seqNumbers)
                     {
                         if (auxMsgNumber == i)
@@ -102,14 +122,17 @@ namespace Broker
                                 lastMsgNumberByPub.Add(pubURL, initLastMsgNumber++);
                             }
                             auxMsgNumber++;
-                            cnt++;
+                            toRemove.Add(i);
                         }
                         else
                         {
                             break;
                         }                       
                     }
-                    seqNumbers.RemoveRange(0, cnt);
+                    foreach(int j in toRemove){
+                        seqNumbers.Remove(j);
+                    }
+                    //seqNumbers.RemoveRange(0, cnt);
                 }
             }
         }
@@ -146,7 +169,34 @@ namespace Broker
             else
             {
                 auxInt.Add(seqN);
-                auxInt.OrderBy(o => o).ToList();
+                filteredSeqNumbers[pubURL] = auxInt.OrderBy(o => o).ToList();
+            }
+        }
+
+        public void addfilteredSeqTotalNumber(int seqN)
+        {
+            filteredSeqTotal.Add(seqN);
+            filteredSeqTotal = filteredSeqTotal.OrderBy(o => o).ToList();
+        }
+
+        public void updatefilteredSeqTotal(int seqN)
+        {
+            List<int> toRemove = new List<int>();
+            foreach (int i in filteredSeqTotal)
+            {
+                if (lastGlobalMsgNumber+1 == i)
+                {
+                    updateLastGlobalMsgNumber();
+                    toRemove.Add(i);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            foreach (int j in toRemove)
+            {
+                filteredSeqTotal.Remove(j);
             }
         }
 
@@ -174,5 +224,39 @@ namespace Broker
             }
         }
 
+        public int LastGlobalMsgNumber
+        {
+            get { return lastGlobalMsgNumber; }
+            set { lastGlobalMsgNumber = value; }
+        }
+
+        public void updateLastGlobalMsgNumber()
+        {
+            lastGlobalMsgNumber++;
+            Console.WriteLine("lastglobalNumber update: " + lastGlobalMsgNumber);
+        }
+
+        public void updateLastGlobalMsgNumber(int nb)
+        {
+            lastGlobalMsgNumber = nb;
+            Console.WriteLine("lastglobalNumber update: " + lastGlobalMsgNumber);
+        }
+
+        public void updateMsgQueueTotal(List<Event> eventsToRemove)
+        {
+            foreach (Event e in eventsToRemove)
+            {
+                msgQueueTotal.Remove(e);
+            }
+        }
+
+        public void addEventNotToDeliver(int msgNb)
+        {
+            eventsNotToDeliver.Add(msgNb);
+        }
+        public bool checkEventNotToDeliver(Event evt)
+        {
+            return eventsNotToDeliver.Contains(evt.MsgNumber);
+        }
     }
 }
