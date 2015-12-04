@@ -22,6 +22,7 @@ namespace Broker
             string ordering = args[3];
             string loggingLevel = args[4];
             string pmURL = args[5];
+            string leaderCount = args[6];
             string port = url.Split(':')[2].Split('/')[0];
             string remotingName = url.Split('/')[3];
             Console.WriteLine("Name: "+ processName+"; Url: " +url+ "; \n\rRouting: " +routing+"; Ordering: " + ordering);
@@ -31,7 +32,7 @@ namespace Broker
 
             NotificationReceiver pm = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), pmURL);
 
-            Broker broker = new Broker(pm, processName, routing, ordering, loggingLevel);
+            Broker broker = new Broker(pm, processName, routing, ordering, loggingLevel, Convert.ToInt32(leaderCount));
             broker.setUrl(url);
 
 

@@ -103,5 +103,19 @@ namespace Broker
             IAsyncResult RemAr = propagateDelegate.BeginInvoke(url, heartBeatAsyncAsyncCallBack, null);
         
         }
+
+        public string findRootNode()
+        {
+            return broker.findRootNode();
+        }
+
+        public delegate void PublishRep(Event newEvent);
+
+        public void publishEventRep(Event newEvent)
+        {
+            //Console.WriteLine(newEvent.Topic + ":" + newEvent.Content);
+            PublishRep pub = new PublishRep(broker.publishEvent);
+            IAsyncResult RemAr = pub.BeginInvoke(newEvent, null, null);
+        }
     }
 }

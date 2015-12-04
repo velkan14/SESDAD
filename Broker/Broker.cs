@@ -16,8 +16,8 @@ namespace Broker
         private int numberFreezes = 0;
         private bool freezeFlag = false;
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
-        int brokerID=1;
-        int LiderID=1;
+        int brokerID;
+        int LiderID=0;
 
         List<BrokerToBrokerInterface> dad = new List<BrokerToBrokerInterface>();
         List<BrokerToBrokerInterface> sons = new List<BrokerToBrokerInterface>();
@@ -52,13 +52,14 @@ namespace Broker
         string processName;
         NotificationReceiver pm;
 
-        public Broker(NotificationReceiver pm, string processName, string routing, string ordering, string loggingLevel)
+        public Broker(NotificationReceiver pm, string processName, string routing, string ordering, string loggingLevel, int brokerID)
         {
             this.pm = pm;
             this.processName = processName;
             this.routing = routing;
             this.ordering = ordering;
             this.loggingLevel = loggingLevel;
+            this.brokerID = brokerID;
         }
 
         public void setUrl(string url)
@@ -844,6 +845,7 @@ namespace Broker
         }
 
 
+
         public void publishEvent(Event newEvent)
         {
             lock (this) {
@@ -889,7 +891,7 @@ namespace Broker
                     }
                     //Vamos usar o root como sequencer de todos os topicos. 
                     if (root == null)
-                        rootURL = findRootNode();
+                        rootURL = this.findRootNode();
                     root = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), rootURL);
                     Console.WriteLine("root url: " + rootURL);
                     //enviamos ao sequencer a mensagem sem o conteudo. Para ser mais eficaz
@@ -909,7 +911,11 @@ namespace Broker
                     if (assertPrimary())
                     {
                         forwardEvent(this.url, newEvent);
-                    }                    
+                        foreach(BrokerToBrokerInterface rep in replicas)
+                        {
+                            rep.publishEventRep(newEvent);
+                        }
+                    }                  
                     Console.WriteLine("Event Forwarded by Publisher: " + newEvent.PublisherName + ", topic: " + newEvent.Topic);
                 }
             }       
@@ -979,7 +985,14 @@ namespace Broker
         //aos outros nos. Ou root podia fazer flooding do seu url. Ou hardcoded como agora 
         public string findRootNode()
         {
-            return "tcp://localhost:3333/brokerB";
+            if (!dad.Any())
+            {
+                return this.url+"B";
+            }
+            else
+            {
+                return dad.First().findRootNode();
+            }
         }
 
         //root vai propagar a info a todos os filhos. Isto é necessário para garantir total order com overlapping groups
@@ -1407,6 +1420,12 @@ namespace Broker
             {
                 return false;
             }
+        }
+
+        //nunca é chamada
+        public void publishEventRep(Event evt)
+        {
+            throw new NotImplementedException();
         }
     }
 }
