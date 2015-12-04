@@ -17,7 +17,9 @@ namespace Subscriber
         {
             string processName = args[0];
             string myURL = args[1];
-            string urlBroker = args[2];
+            string urlBroker0 = args[2];
+            string urlBroker1 = args[3];
+            string urlBroker2 = args[4];
             string pmURL = args[3];
             string port = myURL.Split(':')[2].Split('/')[0];
             string remotingName = myURL.Split('/')[3];
@@ -25,10 +27,10 @@ namespace Subscriber
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
 
-            BrokerSubscribeInterface brk = (BrokerSubscribeInterface)Activator.GetObject(typeof(BrokerSubscribeInterface), urlBroker + "S");
+            BrokerSubscribeInterface brk = (BrokerSubscribeInterface)Activator.GetObject(typeof(BrokerSubscribeInterface), urlBroker0 + "S");
             NotificationReceiver notifier = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), pmURL);
 
-            Subscriber sub = new Subscriber(brk, notifier, processName, myURL);
+            Subscriber sub = new Subscriber(brk, notifier, processName, myURL, urlBroker1, urlBroker2);
 
             PMSubscriberImpl pm = new PMSubscriberImpl(sub);
             RemotingServices.Marshal(pm, remotingName + "PM", typeof(PMSubscriber));

@@ -12,6 +12,7 @@ namespace Publisher
     class Publisher
     {
         private BrokerPublishInterface broker;
+        string brokerURL1, brokerURL2;
         private bool freezeFlag = false;
         private string processName;
         private int eventContent = 0;
@@ -27,11 +28,13 @@ namespace Publisher
 
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
 
-        public Publisher(BrokerPublishInterface broker, NotificationReceiver pm, string processName)
+        public Publisher(BrokerPublishInterface broker, NotificationReceiver pm, string processName, string brokerURL1, string brokerURL2)
         {
             this.broker = broker;
             this.processName = processName;
             this.pm = pm;
+            this.brokerURL1 = brokerURL1;
+            this.brokerURL2 = brokerURL2;
         }
 
         public void crash()

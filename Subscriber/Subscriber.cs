@@ -14,6 +14,8 @@ namespace Subscriber
 
         BrokerSubscribeInterface broker;
         NotificationReceiver notifier;
+        string brokerURL1;
+        string brokerURL2;
         string processName;
         string myUrl;
         AutoResetEvent freezeEvent = new AutoResetEvent(false);
@@ -22,12 +24,14 @@ namespace Subscriber
         private List<string> subscribedTopics = new List<string>();
         public delegate void Notifier(string s);
 
-        public Subscriber(BrokerSubscribeInterface broker, NotificationReceiver notifier, string processName, string url)
+        public Subscriber(BrokerSubscribeInterface broker, NotificationReceiver notifier, string processName, string url, string brokerURL1, string brokerURL2)
         {
             this.processName = processName;
             this.notifier = notifier;
             this.broker = broker;
             this.myUrl = url;
+            this.brokerURL1 = brokerURL1;
+            this.brokerURL2 = brokerURL2;
         }
 
         public string getURL()

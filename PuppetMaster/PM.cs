@@ -35,17 +35,17 @@ namespace PuppetMaster
             }
         }
 
-        public void createSubscriber(string processName, string url, string urlBroker, string pmURL)
+        public void createSubscriber(string processName, string url, string urlBroker0, string urlBroker1, string urlBroker2, string pmURL)
         {
-            Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url + " " + urlBroker + " " + pmURL);
+            Process.Start(@"..\..\..\Subscriber\bin\Debug\subscriber.exe", processName + " " + url + " " + urlBroker0 + " " + urlBroker1 + " " + urlBroker2 + " " + pmURL);
         }
         public void createBroker(string processName, string url, string routing, string ordering, string loggingLevel, string pmURL, int leaderCount)
         {
             Process.Start(@"..\..\..\Broker\bin\Debug\broker.exe", processName + " " + url +" "+ routing +" "+ ordering + " "+ loggingLevel +" " + pmURL + " " + leaderCount.ToString());
         }
-        public void createPublisher(string processName, string url, string urlBroker, string pmURL)
+        public void createPublisher(string processName, string url, string urlBroker0, string urlBroker1, string urlBroker2, string pmURL)
         {
-            Process.Start(@"..\..\..\Publisher\bin\Debug\publisher.exe", processName + " " + url + " " + urlBroker + " " + pmURL);
+            Process.Start(@"..\..\..\Publisher\bin\Debug\publisher.exe", processName + " " + url + " " + urlBroker0 + " " + urlBroker1 + " " + urlBroker2 + " " + pmURL);
         }
 
         

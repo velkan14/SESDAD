@@ -20,7 +20,9 @@ namespace Publisher
         {
             string processName = args[0];
             string myURL = args[1];
-            string urlBroker = args[2];
+            string urlBroker0 = args[2];
+            string urlBroker1 = args[3];
+            string urlBroker2 = args[4];
             string pmURL = args[3];
             string port = myURL.Split(':')[2].Split('/')[0];
             string remotingName = myURL.Split('/')[3];
@@ -28,11 +30,11 @@ namespace Publisher
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
 
-            BrokerPublishInterface broker = (BrokerPublishInterface)Activator.GetObject(typeof(BrokerPublishInterface), urlBroker + "P");
+            BrokerPublishInterface broker = (BrokerPublishInterface)Activator.GetObject(typeof(BrokerPublishInterface), urlBroker0 + "P");
             Console.WriteLine(pmURL);
             NotificationReceiver pm = (NotificationReceiver)Activator.GetObject(typeof(NotificationReceiver), pmURL);
 
-            Publisher pub = new Publisher(broker, pm, processName);
+            Publisher pub = new Publisher(broker, pm, processName, urlBroker1, urlBroker2);
 
             PublisherImpl pi = new PublisherImpl(pub);
             RemotingServices.Marshal(pi, remotingName + "P", typeof(PMPublisher));

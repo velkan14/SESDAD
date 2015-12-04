@@ -98,11 +98,11 @@ namespace PuppetMaster
                                     string processName = splitedConfig[1];
                                     string site = splitedConfig[5];
                                     string URL = splitedConfig[7];
-                                    string brokerURL = findSiteByName(sites, site).BrokerOnSiteURL;
+                                    Site sit = findSiteByName(sites, site);
 
                                     PMInterface obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                         "tcp://" + ipPM + ":8086/PMInterface");
-                                    obj.createPublisher(processName, URL, brokerURL, "tcp://" + ipPM + ":8086/PMNotifier");
+                                    obj.createPublisher(processName, URL, sit.BrokerOnSiteURL0, sit.BrokerOnSiteURL1, sit.BrokerOnSiteURL2, "tcp://" + ipPM + ":8086/PMNotifier");
 
                                     publisherDict.Add(processName, (PMPublisher)Activator.GetObject(typeof(PMPublisher),
                                         URL + "PM"));
@@ -113,10 +113,10 @@ namespace PuppetMaster
                                     processName = splitedConfig[1];
                                     site = splitedConfig[5];
                                     URL = splitedConfig[7];
-                                    brokerURL = findSiteByName(sites, site).BrokerOnSiteURL;
+                                    Site temps = findSiteByName(sites, site);
                                     obj = (PMInterface)Activator.GetObject(typeof(PMInterface),
                                         "tcp://" + ipPM + ":8086/PMInterface");
-                                    obj.createSubscriber(processName, URL, brokerURL, "tcp://" + ipPM + ":8086/PMNotifier");
+                                    obj.createSubscriber(processName, URL, temps.BrokerOnSiteURL0,temps.BrokerOnSiteURL1, temps.BrokerOnSiteURL2, "tcp://" + ipPM + ":8086/PMNotifier");
                                     subscriberDict.Add(processName, (PMSubscriber)Activator.GetObject(typeof(PMSubscriber),
                                         URL + "PM"));
                                     break;
@@ -133,7 +133,9 @@ namespace PuppetMaster
                                     obj.createBroker(processName, URL, routingPolicy, ordering, loggingLevel,"tcp://" + ipPM + ":8086/PMNotifier", tmpSite.LeaderCounter);
                                     //adicionar ao site o url do broker para que os outros processos saibam a quem se ligar
                                     tmpSite.addReplica(URL, processName);
-                                    if(tmpSite.BrokerOnSiteURL == "NULL") tmpSite.BrokerOnSiteURL = URL;
+                                    if (tmpSite.BrokerOnSiteURL0 == "NULL") tmpSite.BrokerOnSiteURL0 = URL;
+                                    else if (tmpSite.BrokerOnSiteURL1 == "NULL") tmpSite.BrokerOnSiteURL1 = URL;
+                                    else if (tmpSite.BrokerOnSiteURL2 == "NULL") tmpSite.BrokerOnSiteURL2 = URL;
                                     PMBroker broker = (PMBroker)Activator.GetObject(typeof(PMBroker),
                                         URL + "PM");
                                     brokerDict.Add(processName, broker);

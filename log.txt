@@ -1,7 +1,18 @@
-2:30:27 PM Friday, December 4, 2015 : Wait 5000
-2:30:28 PM Friday, December 4, 2015 : Publisher publisher0 Publish 5 Ontopic A Interval 3000
-2:30:30 PM Friday, December 4, 2015 : PubEvent publisher0, publisher0, A, 0
-2:30:33 PM Friday, December 4, 2015 : PubEvent publisher0, publisher0, A, 1
-2:30:36 PM Friday, December 4, 2015 : PubEvent publisher0, publisher0, A, 2
-2:30:39 PM Friday, December 4, 2015 : PubEvent publisher0, publisher0, A, 3
-2:30:42 PM Friday, December 4, 2015 : PubEvent publisher0, publisher0, A, 4
+18:22:14 4 de dezembro de 2015 : Subscriber sub0 Subscribe A
+18:22:15 4 de dezembro de 2015 : Subscriber sub1 Subscribe A
+18:22:16 4 de dezembro de 2015 : Subscriber sub2 Subscribe A/abc/def
+18:22:17 4 de dezembro de 2015 : Subscriber sub3 Subscribe A/abc
+18:22:18 4 de dezembro de 2015 : Subscriber sub4 Subscribe A/ghi
+18:22:19 4 de dezembro de 2015 : Subscriber sub5 Subscribe A/ghi/jkl
+18:22:20 4 de dezembro de 2015 : Subscriber sub6 Subscribe A/b/c
+18:22:21 4 de dezembro de 2015 : Subscriber sub7 Subscribe A/ghi
+18:22:21 4 de dezembro de 2015 : Subscriber sub7 Subscribe B/C/D/E/F
+18:22:23 4 de dezembro de 2015 : Wait 2000
+18:22:24 4 de dezembro de 2015 : Publisher publisher2 Publish 2 Ontopic A Interval 1000
+18:22:26 4 de dezembro de 2015 : Wait 2000
+18:22:27 4 de dezembro de 2015 : Subscriber sub0 Unsubscribe A
+18:22:27 4 de dezembro de 2015 : Publisher publisher2 Publish 1 Ontopic A Interval 1000
+18:22:29 4 de dezembro de 2015 : Wait 2000
+18:22:29 4 de dezembro de 2015 : Subscriber sub1 Unsubscribe A
+18:22:30 4 de dezembro de 2015 : Publisher publisher0 Publish 3 Ontopic A/ghi/jkl Interval 1000
+18:22:32 4 de dezembro de 2015 : Wait 2000
