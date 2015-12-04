@@ -12,6 +12,11 @@ namespace CommonTypes
         string getURL();
     }
 
+    public interface PublisherInterface
+    {
+        void changeBroker(string newEvent);
+    }
+
     public interface BrokerPublishInterface {
         void publishEvent(Event newEvent);
     }

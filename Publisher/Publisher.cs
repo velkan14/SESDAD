@@ -16,6 +16,12 @@ namespace Publisher
         private string processName;
         private int eventContent = 0;
         private NotificationReceiver pm;
+
+        internal void changeBroker(string newUrl)
+        {
+            broker = (BrokerPublishInterface)Activator.GetObject(typeof(BrokerPublishInterface), newUrl + "P");
+        }
+
         private int numberFreezes = 0;
         public delegate void Notifier(string s);
 

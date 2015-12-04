@@ -34,6 +34,9 @@ namespace Publisher
 
             Publisher pub = new Publisher(broker, pm, processName);
 
+            PublisherImpl pi = new PublisherImpl(pub);
+            RemotingServices.Marshal(pi, remotingName + "P", typeof(PMPublisher));
+
             PMPublisherImpl publisher = new PMPublisherImpl(pub);
             RemotingServices.Marshal(publisher, remotingName + "PM", typeof(PMPublisher));
             

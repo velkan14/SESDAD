@@ -1480,6 +1480,8 @@ namespace Broker
                 topicsProvidedByBroker.Add(newBroker, topicsAux);
             }
 
+            if (root.getURL().Equals(oldUrl)) root = newBroker;
+
 
 
         }
