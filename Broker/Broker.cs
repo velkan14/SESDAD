@@ -698,10 +698,7 @@ namespace Broker
 
         public void freeze()
         {
-            lock (this)
-            {
-                freezeFlag = true;
-            }
+            freezeFlag = true;
         }
 
         public void status()
@@ -714,21 +711,15 @@ namespace Broker
 
         public void unfreeze()
         {
-            lock (this)
-            {
-                freezeFlag = false;
-            }
-            for (int i = 0; i < numberFreezes; i++)
-                freezeEvent.Set();
-            numberFreezes = 0;
+            Monitor.PulseAll(this);
+            lock(this) { freezeFlag = false; }
         }
 
         public void subscribe(string topic, string subscriberURL)
         {
             if (freezeFlag)
             {
-                numberFreezes++;
-                freezeEvent.WaitOne();
+                Monitor.Wait(this);
             }
             lock (this)
             {
@@ -785,8 +776,7 @@ namespace Broker
         {
             if (freezeFlag)
             {
-                numberFreezes++;
-                freezeEvent.WaitOne();
+                Monitor.Wait(this);
             }
             lock (this)
             {
@@ -844,10 +834,13 @@ namespace Broker
             Console.WriteLine("Unsubscriber: " + subscriberURL + " topic: " + topic);
         }
 
-
-
         public void publishEvent(Event newEvent)
         {
+            if (freezeFlag)
+            {
+                Monitor.Wait(this);
+            }
+
             lock (this) {
                 if (ordering == "FIFO")
                 {
@@ -924,6 +917,11 @@ namespace Broker
         //url é para onde temos de mandar a respota
         public void reqSequence(string url, Event evt)
         {
+            if (freezeFlag)
+            {
+                Monitor.Wait(this);
+            }
+
             lock (this)
             {
                 Console.WriteLine("Sequencer received request from: " + url);
@@ -1165,7 +1163,6 @@ namespace Broker
             eventsToRemove.Clear();       
         }
 
-
         public void forwardInterest(string url, string topic)
         {
             Console.WriteLine("Received forwardInterest(" + url + ", " + topic + ")");
@@ -1283,7 +1280,6 @@ namespace Broker
             
         }
 
-      
         public List<string> subscribersByTopicSubtopicsOf(string topic)
         {
             List<string> subtopics = new List<string>();
@@ -1427,5 +1423,67 @@ namespace Broker
         {
             throw new NotImplementedException();
         }
+
+        public void newLeader()
+        {
+
+
+        }
+
+        public void changeAllOccurencesOf(string oldUrl, string newUrl)
+        {
+            BrokerToBrokerInterface newBroker = (BrokerToBrokerInterface)Activator.GetObject(typeof(BrokerToBrokerInterface), newUrl + "B");
+
+            //Dad
+            for (int i = 0; i < dad.Count; i++)
+            {
+                if (dad[i].getURL().Equals(oldUrl))
+                {
+                    dad[i] = newBroker;
+                }
+            }
+            //Sons
+            for (int i = 0; i < sons.Count; i++)
+            {
+                if (sons[i].getURL().Equals(oldUrl))
+                {
+                    sons[i] = newBroker;
+                }
+            }
+            //brokersByTopic
+            foreach (KeyValuePair<string, List<BrokerToBrokerInterface>> pair in brokersByTopic)
+            {
+                for (int i = 0; i < pair.Value.Count; i++)
+                {
+                    if(pair.Value[i].getURL().Equals(oldUrl))
+                    {
+                        pair.Value[i] = newBroker;
+                    }
+                }
+            }
+
+            //topicsProvidedByBroker
+            BrokerToBrokerInterface brokerAux = null;
+            List<string> topicsAux = new List<string>();
+
+            foreach(KeyValuePair<BrokerToBrokerInterface, List<string>> entry in topicsProvidedByBroker)
+            {
+                if (entry.Key.getURL().Equals(oldUrl)) {
+                    brokerAux = entry.Key;
+                    topicsAux = entry.Value;
+                    break;
+                }
+            }
+            if (brokerAux != null)
+            {
+                topicsProvidedByBroker.Remove(brokerAux);
+                topicsProvidedByBroker.Add(newBroker, topicsAux);
+            }
+
+
+
+        }
+
+
     }
 }
